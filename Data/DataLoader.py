@@ -23,7 +23,7 @@ import PositionAnalysis.PositionAnalyzer
 reload(PositionAnalysis.PositionAnalyzer)
 from PositionAnalysis.PositionAnalyzer import *
 
-from Functions.items import *
+from Functions.Items import *
 
 class DataLoader:
     def __init__(self, user_id, pwd):

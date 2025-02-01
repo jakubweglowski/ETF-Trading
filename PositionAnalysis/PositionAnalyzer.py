@@ -13,7 +13,7 @@ import Functions.TechnicalFunctions
 reload(Functions.TechnicalFunctions)
 from Functions.TechnicalFunctions import *
 
-from Functions.items import *
+from Functions.Items import *
 
 class PositionAnalyzer:
     def __init__(self, currentTrades, info, weights: dict | None = None):
