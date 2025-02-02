@@ -49,8 +49,8 @@ class PositionAnalyzer:
             return -1
         
         currency_bid = XTB_to_pandas(response)
-        currency_spread = self.info[currency_symbol]['SpreadAbs']
-        currency_ask = currency_bid + currency_spread
+        currency_spread = self.info[currency_symbol]['SpreadProc']
+        currency_ask = currency_bid*(1+currency_spread)/(1-currency_spread)
 
         opening_time = dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S")
         opening_time = round_to_nearest_hour(opening_time).strftime("%Y-%m-%d %H")+':00:00'
@@ -76,8 +76,8 @@ class PositionAnalyzer:
             print(f"[BŁĄD] Błąd pobierania danych z API: nie można pobrać aktualnego kursu walutowego.")
             currency_bid = pd.Series({0: pd.NA})
 
-        currency_spread = self.info[currency_symbol]['SpreadAbs']
-        currency_ask = currency_bid + currency_spread
+        currency_spread = self.info[currency_symbol]['SpreadProc']
+        currency_ask = currency_bid*(1+currency_spread)/(1-currency_spread)
         currency_now = currency_bid.iloc[-1]*(1.0-margin)
         
         return (currency_open, currency_now)
