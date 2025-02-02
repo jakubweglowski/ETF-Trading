@@ -61,6 +61,7 @@ class DataLoader:
                     for x in response['returnData'] if x['symbol'] not in omit_symbols}
             
             self.disconnect()
+            
             return PositionAnalyzer(currentTrades, info, weights)
         
     def getInstrumentsData(self,
@@ -184,7 +185,7 @@ class DataLoader:
             info = {x['symbol']:
                         {'Waluta': x['currency'], 
                         'SpreadAbs': x['spreadRaw'],
-                        'SpreadProc': round(100*x['spreadRaw']/x['bid'], 4),
+                        'SpreadProc': round(x['spreadRaw']/x['bid'], 4),
                         'Opis': x['description'],
                         'Typ': x['type']
                         }

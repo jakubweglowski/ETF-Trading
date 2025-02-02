@@ -186,7 +186,7 @@ class DataCleaner:
     
     def getAskPrice(self):
         spread = self.getSpreads().loc['spreadProc']
-        data_ask = self.getBidPrice()*(1+spread)/(1-spread)
+        data_ask = self.getBidPrice()*(1+spread)
         return data_ask
     
     def getPLNPrices(self):
