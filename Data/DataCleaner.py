@@ -34,7 +34,10 @@ class DataCleaner:
                  measure_volatility: str = 'pct',
                  compare_volatility: str | list[str] = "ema_2w",
                  quantile_volatility: float = 0.075,
-                 alpha_EMA: float = 0.1):
+                 alpha_EMA: float = 0.1,
+                 verbose: bool = True):
+        
+        self.verbose = verbose
         
         if len(load_only) > 0:
             self.load_only = [x for x in load_only if x in list(data.columns)]
@@ -79,7 +82,7 @@ class DataCleaner:
     def updateData(self, 
                    symbols: list[str], 
                    method: str = 'loc'):
-        print(f"\tAktualizacja danych...")
+        if self.verbose: print(f"\tAktualizacja danych...")
         method = method.lower()
         assert method in ['loc', 'drop'], "[BŁĄD] Argument 'method' musi być jednym z 'loc', 'drop'."
         valid_symbols = [x for x in symbols if x in self.data.columns]
@@ -87,12 +90,12 @@ class DataCleaner:
         if method == 'loc':
             for x in self.propagate:
                 if x not in valid_symbols: valid_symbols.append(x)
-            print(f"\tPozostawiam {len(valid_symbols)} instrumentów.")
+            if self.verbose: print(f"\tPozostawiam {len(valid_symbols)} instrumentów.")
             self.data = self.data.loc[:, valid_symbols] 
         if method == 'drop': 
             for x in self.propagate:
                 if x in valid_symbols: valid_symbols.remove(x)
-            print(f"\tPozostawiam {len(self.data.columns) - len(valid_symbols)} instrumentów.")
+            if self.verbose: print(f"\tPozostawiam {len(self.data.columns) - len(valid_symbols)} instrumentów.")
             self.data = self.data.drop(columns=valid_symbols)
         
         assert all([x in self.spread_df.columns for x in self.data.columns]), "[BŁĄD] Istnieje ticker, dla którego pobrano dane, ale nie pobrano spreadu."
@@ -107,7 +110,7 @@ class DataCleaner:
         symbols = list(self.data.columns[self.data.isna().sum() <= max_na])
         for x in currencies:
             if x not in symbols: symbols.append(x)
-        print("[INFO] Usuwanie instrumentów o dużych brakach w danych.")
+        if self.verbose: print("[INFO] Usuwanie instrumentów o dużych brakach w danych.")
         self.updateData(symbols, 'loc')
         # self.data = self.data.loc[:, self.data.isna().sum() < max_na]
         # self.spread_df = self.spread_df.loc[:, self.data.columns]
@@ -117,7 +120,7 @@ class DataCleaner:
         symbols = list(self.spread_df.columns[low_spread_proc])
         for x in currencies:
             if x not in symbols: symbols.append(x)
-        print("[INFO] Usuwanie instrumentów o wysokich spreadach.")
+        if self.verbose: print("[INFO] Usuwanie instrumentów o wysokich spreadach.")
         self.updateData(symbols, 'loc')
     
     # metody odrzucania 'quantile' i 'mean' powinny być używane z miarą zmienności 'abs'
@@ -167,7 +170,7 @@ class DataCleaner:
         symbols = list(getQuantiles(y=volatility, q=quantile, one_sided=True, type_='values').index)
         for x in currencies:
             if x not in symbols: symbols.append(x)
-        print("[INFO] Usuwanie instrumentów na podstawie ich zmienności.")
+        if self.verbose: print("[INFO] Usuwanie instrumentów na podstawie ich zmienności.")
         self.updateData(symbols, 'loc')
     
     def _remove_high_TER(self, threshold: float):
@@ -175,7 +178,7 @@ class DataCleaner:
         symbols = list(TER.iloc[(TER < threshold).values].index)
         for x in currencies:
             if x not in symbols: symbols.append(x)
-        print("[INFO] Usuwanie instrumentów o wysokich kosztach obsługi.")
+        if self.verbose: print("[INFO] Usuwanie instrumentów o wysokich kosztach obsługi.")
         self.updateData(symbols, 'loc')
     
     def getSpreads(self):

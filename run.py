@@ -16,9 +16,9 @@ from Functions.FileCommunication import *
 
 dl = DataLoader(user_id, pwd)
 info = dl.getInstrumentsInfo()
-# symbols = [key for key, val in info.items()]
-# data = dl.getInstrumentsData(symbols, '2020-01-01', '2025-01-14', verbose=True)
+symbols = [key for key, val in info.items()]
+data = dl.getInstrumentsData(symbols, '2010-01-01', '2025-02-02', verbose=True)
 # data = dl.loadInstrumentsData('2020-01-01', '2025-01-13', filename='InstrumentsData', filepath='./Data', verbose=True)
 
 SaveDict(info, 'InstrumentsInfo', filepath='./Data')
-# SaveData(data, 'InstrumentsData1', filepath='./Data')
+SaveData(data, 'InstrumentsData1', filepath='./Data')
