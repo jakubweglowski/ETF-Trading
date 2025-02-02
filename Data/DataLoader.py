@@ -129,7 +129,7 @@ class DataLoader:
                     print(f"\t\t\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
 
             if i % reconnect_after == (reconnect_after-1) and connected: self.disconnect(verbose)
-            time.sleep(2)
+            time.sleep(5)
             
         print(f"\tZakończono pobieranie")
         if connected: self.disconnect(verbose)       
