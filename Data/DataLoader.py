@@ -148,15 +148,22 @@ class DataLoader:
         data.index = pd.DatetimeIndex(data.index)
         symbols = list(data.columns)
         
-        if start_date < data.index[0].strftime('%Y-%m-%d'):
-            print(f"\tPobieramy brakujące dane...")
+        old_start = data.index[0].strftime('%Y-%m-%d')
+        if start_date < old_start:
+            print(f"\tPobieramy brakujące dane od {start_date} do {old_start}...")
             remaining_data_before = self.getInstrumentsData(symbols, start_date, shift_date(data.index[0].strftime("%Y-%m-%d"), -1).strftime("%Y-%m-%d"), verbose=verbose)
-            data = pd.concat([data, remaining_data_before])
+            new_symbols = [x for x in symbols if x in remaining_data_before.columns]
+            print(f"\tZagubiliśmy {len(symbols)-len(new_symbols)} instrumentów.")
+            data = pd.concat([data.loc[:, new_symbols], remaining_data_before.loc[:, new_symbols]])
+            symbols = list(data.columns)
             
-        if data.index[-1].strftime('%Y-%m-%d') < end_date:
-            print(f"\tPobieramy brakujące dane...")
+        old_end = data.index[-1].strftime('%Y-%m-%d')
+        if old_end < end_date:
+            print(f"\tPobieramy brakujące dane od {old_end} do {end_date}...")
             remaining_data_after = self.getInstrumentsData(symbols, shift_date(data.index[-1].strftime("%Y-%m-%d"), 1).strftime("%Y-%m-%d"), end_date, verbose=verbose)
-            data = pd.concat([data, remaining_data_after])
+            new_symbols = [x for x in symbols if x in remaining_data_after.columns]
+            print(f"\tZagubiliśmy {len(symbols)-len(new_symbols)} instrumentów.")
+            data = pd.concat([data.loc[:, new_symbols], remaining_data_after.loc[:, new_symbols]])
             
         data = data.sort_index()
         if append: SaveData(data, filename, filepath)

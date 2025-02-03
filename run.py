@@ -15,10 +15,14 @@ reload(Functions.FileCommunication)
 from Functions.FileCommunication import *
 
 dl = DataLoader(user_id, pwd)
-info = dl.getInstrumentsInfo()
-symbols = [key for key, val in info.items()]
-data = dl.getInstrumentsData(symbols, '2010-01-01', '2025-02-02', verbose=True)
-# data = dl.loadInstrumentsData('2020-01-01', '2025-01-13', filename='InstrumentsData', filepath='./Data', verbose=True)
 
+print(f"[INFO] Pobieramy informacje o instrumentach: {dt.now().strftime('%Y-%m-%d %H:%M:%S')}")
+info = dl.getInstrumentsInfo()
 SaveDict(info, 'InstrumentsInfo', filepath='./Data')
+print("[INFO] Informacje zostały pobrane i skutecznie załadowane.")
+
+print(f"[INFO] Pobieramy historyczne kursy instrumentów: {dt.now().strftime('%Y-%m-%d %H:%M:%S')}")
+symbols = [key for key, val in info.items()]
+data = dl.getInstrumentsData(symbols, '2015-12-31', '2025-02-03', verbose=True)
+# data = dl.loadInstrumentsData('2015-12-31', '2025-02-03', filename='InstrumentsData', filepath='./Data', verbose=True)
 SaveData(data, 'InstrumentsData1', filepath='./Data')
