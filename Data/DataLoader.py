@@ -3,8 +3,6 @@ from datetime import datetime as dt, timedelta as tmd
 import time
 from importlib import reload
 
-import APICommunication.xAPIConnector
-reload(APICommunication.xAPIConnector)
 from APICommunication.xAPIConnector import *
 
 import Functions.FileCommunication
@@ -41,28 +39,6 @@ class DataLoader:
     def disconnect(self, verbose: bool = True):
         if verbose: print(f"\t[{now(False)}] Wylogowuję z API...")
         self.client.disconnect()
-        
-    def getCurrentTrades(self, info, weights, omit_symbols: list = ['COSMOS']):
-        self.connect()
-        args = {
-            "openedOnly": True
-        }
-        response = self.client.commandExecute('getTrades', args)
-        if response['status'] == False:
-            self.disconnect()
-            raise Warning(f"[BŁĄD: {now(False)}] Błąd wysyłania zapytania do API: {response['errorDescr']}")
-        else:
-            currentTrades = {x['symbol']:
-                        {'CenaOtwarcia': x['open_price'], 
-                        'CenaAktualna': x['close_price'],
-                        'WartoscPoczatkowaPLN': x['nominalValue'],
-                        'CzasOtwarcia': dt.fromtimestamp(x['open_time']/1000).strftime("%Y-%m-%d %H:%M:%S")
-                        }
-                    for x in response['returnData'] if x['symbol'] not in omit_symbols}
-            
-            self.disconnect()
-            
-            return PositionAnalyzer(currentTrades, info, weights)
         
     def getInstrumentsData(self,
                 symbols: list[str],

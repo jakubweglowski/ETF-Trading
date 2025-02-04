@@ -20,6 +20,10 @@ def XTB_to_pandas(response):
 
 def summary_from_dict(statDict):
     summary = f"Opis wygenerowany {statDict['CzasAnalizy']}.\n"
+    try:
+        summary += f"Czas otwarcia pozycji: {statDict['CzasOtwarcia']}.\n"
+    except KeyError:
+        pass
     summary += f"Okres inwestycji: {statDict['OkresInwestycji']}.\n"
     summary += f"Zastosowane kryterium wyboru: {statDict['Model']}.\n"
     summary += f"Metoda estymacji ryzyka: {statDict['MetodaEstymacjiRyzyka']}.\n"
