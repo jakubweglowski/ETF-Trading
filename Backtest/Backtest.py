@@ -36,6 +36,7 @@ class Backtest:
         return train, test
     
     def getSummary(self,
+                   success_threshold: float = 1.0,
                    sharpe_threshold: float = 1.5,
                    low_CI_threshold: float = 1.5):
         
@@ -104,8 +105,16 @@ class Backtest:
         summary = pd.DataFrame(summary_dict).T
         summary['Error'] = (summary['TrueReturn'] - summary['ExpectedReturn'])
         summary['InConfInt'] = summary['TrueReturn'].between(summary['ConfIntLow'], summary['ConfIntHigh'])
+        
+        # Żeby otworzyć pozycję, muszą być łącznie spełnione warunki:
+        #   - Sharpe Ratio musi być dostatecznie duże
+        #   - Dolny kraniec przedziału ufności musi być dostatecznie duży
         summary['WasOpened'] = (summary['SharpeRatio'] > sharpe_threshold) & (summary['ConfIntLow'] > low_CI_threshold)
-        summary['WasSuccessful'] = summary['WasOpened'] & ((summary['Error'] > 0) | (summary['InConfInt']))
+        
+        # Żeby uznać pozycję za sukces, muszą być łącznie spełnione warunki:
+        #   - Pozycja musiała zostać otwarta
+        #   - Rzeczywisty zwrot musi być dostatecznie duży
+        summary['WasSuccessful'] = summary['WasOpened'] & (summary['TrueReturn'] > success_threshold)
         
         return summary
     
