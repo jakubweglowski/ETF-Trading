@@ -22,7 +22,9 @@ reload(Functions.TechnicalFunctions)
 from Functions.TechnicalFunctions import *
 
 class PortfolioLoader:
-    
+    """
+    Klasa służąca ładowaniu portfela z zapisanego pliku
+    """
     def __init__(self,
                  filename: str,
                  filepath: str = 'Positions'):

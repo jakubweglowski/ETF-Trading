@@ -17,8 +17,9 @@ from Functions.FileCommunication import *
 dl = DataLoader(user_id, pwd)
 
 print(f"[INFO] Pobieramy informacje o instrumentach: {dt.now().strftime('%Y-%m-%d %H:%M:%S')}")
-info = dl.getInstrumentsInfo()
-SaveDict(info, 'InstrumentsInfo', filepath='./Data')
+# info = dl.getInstrumentsInfo()
+info = dl.loadInstrumentsInfo(filepath='./Data')
+# SaveDict(info, 'InstrumentsInfo', filepath='./Data')
 print("[INFO] Informacje zostały pobrane i skutecznie załadowane.")
 
 print(f"[INFO] Pobieramy historyczne kursy instrumentów: {dt.now().strftime('%Y-%m-%d %H:%M:%S')}")

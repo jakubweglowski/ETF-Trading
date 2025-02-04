@@ -128,8 +128,11 @@ class DataLoader:
                 except:
                     print(f"\t\t\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
 
-            if i % reconnect_after == (reconnect_after-1) and connected: self.disconnect(verbose)
-            time.sleep(5)
+            if i % reconnect_after == (reconnect_after-1) and connected:
+                self.disconnect(verbose)
+                time.sleep(27)
+                
+            time.sleep(3)
             
         print(f"\tZakończono pobieranie")
         if connected: self.disconnect(verbose)       
@@ -139,7 +142,7 @@ class DataLoader:
     def loadInstrumentsData(self,
                             start_date: str,
                             end_date: str = now(),
-                            filename: str = 'InstrumentsData',
+                            filename: str = 'InstrumentsData1',
                             filepath: str = 'Data',
                             append: bool = True,
                             verbose: bool = False):
