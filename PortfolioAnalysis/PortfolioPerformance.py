@@ -8,7 +8,7 @@ class PortfolioPerformance:
     def __init__(self,
                  portfolio: dict,
                  returnRates: pd.DataFrame,
-                 freq: str | int,
+                 freq: str,
                  risk_method: str,
                  model: str | None = None, 
                  risk_free_rate: float = 0.0575,
