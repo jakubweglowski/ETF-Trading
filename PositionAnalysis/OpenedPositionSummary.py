@@ -8,15 +8,15 @@ from Functions.TechnicalFunctions import *
 
 from Functions.Items import *
 
-class PositionAnalyzer:
+class OpenedPositionSummary:
     
     def __init__(self,
+                 user_id: str,
+                 pwd: str,
                  currentTrades: dict,
                  info: dict,
                  portfolio: dict | None = None, # portfel z wagami
-                 exchange_rates_open: dict | None = None,
-                 user_id: str = cfg.user_id,
-                 pwd: str = cfg.pwd):
+                 exchange_rates_open: dict | None = None):
         
         self.info = {key: val
                      for key, val in info.items()

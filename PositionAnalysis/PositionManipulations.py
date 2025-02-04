@@ -4,7 +4,7 @@ import pandas as pd
 from APICommunication.xAPIConnector import *
 
 from PortfolioAnalysis.PortfolioLoader import PortfolioLoader
-from PositionAnalysis.PositionAnalyzer import PositionAnalyzer
+from PositionAnalysis.OpenedPositionSummary import OpenedPositionSummary
 from Functions.TechnicalFunctions import XTB_to_pandas
 from Functions.FileCommunication import SaveDict
 from Functions.TimeFunctions import str_to_UNIX, now
@@ -113,9 +113,11 @@ class PositionManipulator:
                 print("[OSTRZEŻENIE] W pliku nie zapisano kursów walutowych w chwili otwarcia pozycji.")
                 exchange_rates_open = None
                 
-            return PositionAnalyzer(currentTrades, 
-                                    self.info, 
-                                    self.portfolio, 
-                                    exchange_rates_open=exchange_rates_open)
+            return OpenedPositionSummary(self.user_id,
+                                         self.pwd,
+                                         currentTrades, 
+                                         self.info, 
+                                         self.portfolio, 
+                                         exchange_rates_open=exchange_rates_open)
         
         

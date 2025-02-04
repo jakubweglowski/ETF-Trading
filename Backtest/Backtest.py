@@ -35,7 +35,9 @@ class Backtest:
         
         return train, test
     
-    def getSummary(self):
+    def getSummary(self,
+                   sharpe_threshold: float = 1.5,
+                   low_CI_threshold: float = 1.5):
         
         train, test = self.generate_train_test()
         
@@ -79,7 +81,7 @@ class Backtest:
             print(f"\t[INFO] Test w okresie od {start_test} do {end_test}")
 
             test_indices = returnRates.index.isin(pd.date_range(start_train, end_train))
-            pp = PortfolioPerformance(portfolio, returnRates.loc[test_indices, :], self.freq, 'empirical', 'max_utility')
+            pp = PortfolioPerformance(portfolio, returnRates.loc[test_indices, :], self.freq, 'empirical',)
             true_return = pp.portfolioReturn.iloc[-1]
             
             # if sharpe_ratio >= 1.0:
@@ -93,15 +95,17 @@ class Backtest:
             print(f"\tTreningowy przedział ufności: [{conf_int[0]:.2%}, {conf_int[1]:.2%}]")
             print()
             
-            summary_dict[i+1] = {'ExpectedReturn': expected_return,
-                                 'TrueReturn': true_return,
-                                 'ConfIntLow': conf_int[0],
-                                 'ConfIntHigh': conf_int[1],
-                                 'SharpeRatio': sharpe_ratio}
+            summary_dict[i+1] = {'ExpectedReturn': round(100*expected_return, 2),
+                                 'ConfIntLow': round(100*conf_int[0], 2),
+                                 'ConfIntHigh': round(100*conf_int[1], 2),
+                                 'SharpeRatio': sharpe_ratio,
+                                 'TrueReturn': round(100*true_return, 2)}
 
         summary = pd.DataFrame(summary_dict).T
+        summary['Error'] = (summary['TrueReturn'] - summary['ExpectedReturn'])
         summary['InConfInt'] = summary['TrueReturn'].between(summary['ConfIntLow'], summary['ConfIntHigh'])
-        summary.insert(loc=2, column='Error', value=(summary['TrueReturn'] - summary['ExpectedReturn']))
+        summary['WasOpened'] = (summary['SharpeRatio'] > sharpe_threshold) & (summary['ConfIntLow'] > low_CI_threshold)
+        summary['WasSuccessful'] = summary['WasOpened'] & ((summary['Error'] > 0) | (summary['InConfInt']))
         
         return summary
     

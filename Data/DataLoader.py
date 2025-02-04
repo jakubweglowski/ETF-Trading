@@ -17,9 +17,9 @@ import Functions.TechnicalFunctions
 reload(Functions.TechnicalFunctions)
 from Functions.TechnicalFunctions import *
 
-import PositionAnalysis.PositionAnalyzer
-reload(PositionAnalysis.PositionAnalyzer)
-from PositionAnalysis.PositionAnalyzer import *
+import PositionAnalysis.OpenedPositionSummary
+reload(PositionAnalysis.OpenedPositionSummary)
+from PositionAnalysis.OpenedPositionSummary import *
 
 from Functions.Items import *
 
