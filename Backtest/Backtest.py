@@ -1,18 +1,8 @@
 import pandas as pd
-from importlib import reload
 
 import APICommunication.config as cfg
-
-import Data.DataLoader
-reload(Data.DataLoader)
 from Data.DataLoader import *
-
-import Data.DataCleaner
-reload(Data.DataCleaner)
 from Data.DataCleaner import *
-
-import MarkowitzAnalysis.ReturnAnalysis
-reload(MarkowitzAnalysis.ReturnAnalysis)
 from MarkowitzAnalysis.ReturnAnalysis import *
 
 class Backtest:

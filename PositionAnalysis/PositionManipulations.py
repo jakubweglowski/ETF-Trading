@@ -3,7 +3,7 @@ import pandas as pd
 
 from APICommunication.xAPIConnector import *
 
-from PositionAnalysis.PortfolioLoader import PortfolioLoader
+from PortfolioAnalysis.PortfolioLoader import PortfolioLoader
 from PositionAnalysis.PositionAnalyzer import PositionAnalyzer
 from Functions.TechnicalFunctions import XTB_to_pandas
 from Functions.FileCommunication import SaveDict

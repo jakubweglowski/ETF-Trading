@@ -1,17 +1,9 @@
 import pandas as pd
 from datetime import datetime as dt, timedelta as tmd
-from importlib import reload
-
 
 import APICommunication.config as cfg
 from APICommunication.xAPIConnector import *
-
-import Functions.TimeFunctions
-reload(Functions.TimeFunctions)
 from Functions.TimeFunctions import *
-
-import Functions.TechnicalFunctions
-reload(Functions.TechnicalFunctions)
 from Functions.TechnicalFunctions import *
 
 from Functions.Items import *
@@ -36,7 +28,7 @@ class PositionAnalyzer:
         self.currentTrades = {key: val
                               for key, val in currentTrades.items() if key in self.portfolio.keys()}
 
-    def get_currency(self, client, symbol, margin: float = 0.005):
+    def get_currency(self, client: APIClient, symbol: str, margin: float = 0.005):
         # wyszukujemy walutę instrumentu
         for x in currencies:
             if self.info[symbol]['Waluta'] == x[:3]:
@@ -94,7 +86,7 @@ class PositionAnalyzer:
         
         return (currency_open, currency_now)
         
-    def getSummary(self, ):
+    def getSummary(self):
             
         client = APIClient()
         

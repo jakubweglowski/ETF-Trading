@@ -2,15 +2,10 @@ import pandas as pd
 from numpy.random import dirichlet
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from importlib import reload
 
-import MarkowitzAnalysis.ReturnAnalysis
-reload(MarkowitzAnalysis.ReturnAnalysis)
 from MarkowitzAnalysis.ReturnAnalysis import *
 
-import PositionAnalysis.PortfolioPerformance
-reload(PositionAnalysis.PortfolioPerformance)
-from PositionAnalysis.PortfolioPerformance import *
+from PortfolioAnalysis.PortfolioPerformance import *
 
 
 cmap = mpl.colormaps['Wistia']
@@ -81,7 +76,7 @@ class EfficientFrontierPlot:
         # rysujemy 'max_utility'
         print(f"[INFO] Wyznaczamy portfele 'max_utility'...")
         mo = MarkowitzOptimization(self.returnRates, self.freq, verbose=False)
-        for ra in [5., 10., 20., 50., 100., 200., 300.]:
+        for ra in [15., 30., 60., 100., 150., 200., 300.]:
             mo.getOptimalWeights(model='max_utility', risk_method=self.risk_method, risk_aversion=ra)
             portfolio = mo.getPortfolio()
             statDict = portfolio.getStatDict()

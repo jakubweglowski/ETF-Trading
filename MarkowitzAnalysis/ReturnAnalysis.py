@@ -1,25 +1,9 @@
 import pandas as pd
-from importlib import reload
-
-import Functions.FileCommunication
-reload(Functions.FileCommunication)
 from Functions.FileCommunication import *
-
-import Functions.TimeFunctions
-reload(Functions.TimeFunctions)
 from Functions.TimeFunctions import *
-
-import Functions.StatisticalFunctions
-reload(Functions.StatisticalFunctions)
 from Functions.StatisticalFunctions import *
-
-import Functions.TechnicalFunctions
-reload(Functions.TechnicalFunctions)
 from Functions.TechnicalFunctions import *
-
-import PositionAnalysis.PortfolioPerformance
-reload(PositionAnalysis.PortfolioPerformance)
-from PositionAnalysis.PortfolioPerformance import PortfolioPerformance
+from PortfolioAnalysis.PortfolioPerformance import PortfolioPerformance
 
 from pypfopt.efficient_frontier import EfficientFrontier
 
