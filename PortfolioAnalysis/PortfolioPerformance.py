@@ -14,9 +14,9 @@ class PortfolioPerformance:
                  risk_free_rate: float = 0.0575,
                  data: pd.DataFrame | None = None):
         
-        assert isinstance(freq, str) or isinstance(freq, int), "Argument 'freq' musi być klasy 'str' albo 'int'."
-        if isinstance(freq, str): self.freq = freq
-        self.k = (recalculate_frequency(freq) if isinstance(freq, str) else freq)        
+        assert isinstance(freq, str), "Argument 'freq' musi być klasy 'str'."
+        self.freq = freq
+        self.k = recalculate_frequency(self.freq)     
         self.risk_free_rate = risk_free_rate*self.k/252
         
         self.portfolio = portfolio
@@ -25,7 +25,9 @@ class PortfolioPerformance:
         
         self.returnRates = returnRates.loc[:, self.symbols]
         
-        if data is not None: self.portfolioPrice = (self.weights * data.loc[:, self.symbols]).sum(axis=1)
+        if data is not None: 
+            self.portfolioPrice = (self.weights * data.loc[:, self.symbols]).sum(axis=1)
+            
         self.portfolioReturn = (self.weights * self.returnRates).sum(axis=1)
         
         self.portfoliomean = self.portfolioReturn.mean()
@@ -83,9 +85,4 @@ class PortfolioPerformance:
                 SaveDict(statDict, filename, filepath)
             if save_text:
                 with open(f"{filepath}/{filename}.txt", 'w', encoding='utf-8') as f:
-                    f.write(summary)        
-        
-    def calculateRealPortfolio(self, K: float):
-        print(f"Skład portfela przeliczony dla kwoty {K} PLN:")
-        for key, val in self.portfolio.items():
-            print(f"\t{key}: {K*val/100 :.2f} PLN")
+                    f.write(summary)

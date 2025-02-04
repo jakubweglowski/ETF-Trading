@@ -10,10 +10,13 @@ from Functions.Items import *
 
 class PositionAnalyzer:
     
-    def __init__(self, currentTrades: dict,
+    def __init__(self,
+                 currentTrades: dict,
                  info: dict,
                  portfolio: dict | None = None, # portfel z wagami
-                 exchange_rates_open: dict | None = None):
+                 exchange_rates_open: dict | None = None,
+                 user_id: str = cfg.user_id,
+                 pwd: str = cfg.pwd):
         
         self.info = {key: val
                      for key, val in info.items()
@@ -28,7 +31,21 @@ class PositionAnalyzer:
         self.currentTrades = {key: val
                               for key, val in currentTrades.items() if key in self.portfolio.keys()}
 
-    def get_currency(self, client: APIClient, symbol: str, margin: float = 0.005):
+        self.client = None
+        self.user_id = user_id
+        self.pwd = pwd
+        
+    def connect(self, verbose: bool = True):    
+        self.client = APIClient()
+        if verbose: print(f"\t[{now(False)}] Loguję do API...")
+        self.client.execute(loginCommand(self.user_id, self.pwd))
+    
+    def disconnect(self, verbose: bool = True):
+        if verbose: print(f"\t[{now(False)}] Wylogowuję z API...")
+        self.client.disconnect()
+        
+    def get_currency(self, symbol: str, margin: float = 0.005):
+        
         # wyszukujemy walutę instrumentu
         for x in currencies:
             if self.info[symbol]['Waluta'] == x[:3]:
@@ -37,6 +54,7 @@ class PositionAnalyzer:
         if self.exchange_rates_open is not None:
             currency_open = self.exchange_rates_open['ask'][currency_symbol]
         else:
+                        
             # wgrywamy kurs walutowy w chwili zakupu instrumentu
             dt_start = dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S") + tmd(hours=-2)
             dt_end = dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S") + tmd(hours=2)
@@ -49,7 +67,10 @@ class PositionAnalyzer:
                             'symbol': currency_symbol,
                             'period': period_dict['1h']
             }}
-            response = client.commandExecute('getChartRangeRequest', arguments=args)
+            self.connect(False)
+            response = self.client.commandExecute('getChartRangeRequest', arguments=args)
+            self.disconnect(False)
+            
             if response['status'] == False:
                 print(f"[BŁĄD] Błąd pobierania danych z API: {response['errorDescr']}")
                 return -1
@@ -75,30 +96,28 @@ class PositionAnalyzer:
                         'symbol': currency_symbol,
                         'period': period_dict['1min']
         }}
-        response = client.commandExecute('getChartRangeRequest', arguments=args)
+        
+        self.connect(False)
+        response = self.client.commandExecute('getChartRangeRequest', arguments=args)
+        self.disconnect(False)
         try:
             currency_bid = XTB_to_pandas(response)
         except:
             print(f"[BŁĄD] Błąd pobierania danych z API: nie można pobrać aktualnego kursu walutowego.")
+            print(response)
             currency_bid = pd.Series({0: pd.NA})
 
         currency_now = currency_bid.iloc[-1]*(1.0-margin)
-        
+                
         return (currency_open, currency_now)
         
     def getSummary(self):
-            
-        client = APIClient()
-        
+                    
         for symbol in self.currentTrades.keys():
-            
-            client.execute(loginCommand(cfg.user_id, cfg.pwd))
-            
-            currency_open, currency_now = self.get_currency(client, symbol)
+                        
+            currency_open, currency_now = self.get_currency(symbol)
             self.currentTrades[symbol]['CenaOtwarciaPLN'] = self.currentTrades[symbol]['CenaOtwarcia'] * currency_open
             self.currentTrades[symbol]['CenaAktualnaPLN'] = self.currentTrades[symbol]['CenaAktualna'] * currency_now
-
-        client.disconnect()
         
         self.currentTrades = pd.DataFrame(self.currentTrades)
         

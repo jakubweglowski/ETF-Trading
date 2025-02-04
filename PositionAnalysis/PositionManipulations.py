@@ -12,13 +12,22 @@ from Functions.Items import period_dict, currencies
 
 class PositionManipulator:
     
-    def __init__(self, user_id: str, pwd: str, info: dict):
+    def __init__(self, 
+                 user_id: str, 
+                 pwd: str, 
+                 info: dict,
+                 filename_load: str,
+                 filepath_load: str):
         
         self.user_id = user_id
         self.pwd = pwd
         
         self.info = info
         self.client = None
+        
+        pl = PortfolioLoader(filename_load, filepath_load)
+        self.statDict = pl.statDict
+        self.portfolio = pl.portfolio
         
     def connect(self, verbose: bool = True):    
         self.client = APIClient()
@@ -31,8 +40,6 @@ class PositionManipulator:
         
     def get_currencies(self, margin=0.005):
         
-        self.connect()
-        
         # wgrywamy kurs walutowy w chwili obecnej
         dt_start = dt.now() + tmd(days=-2)
         dt_end = dt.now()
@@ -41,6 +48,8 @@ class PositionManipulator:
         startUNIXTIME, endUNIXTIME = str_to_UNIX(start+':00'), str_to_UNIX(end+':00')
 
         currency_prices = {'bid': {}, 'ask': {}}
+        
+        self.connect(False)
         for currency_symbol in currencies:
             args = {'info': {
                             'end': endUNIXTIME,
@@ -49,6 +58,7 @@ class PositionManipulator:
                             'period': period_dict['1min']
             }}
             response = self.client.commandExecute('getChartRangeRequest', arguments=args)
+
             try:
                 currency_bid = XTB_to_pandas(response)
             except:
@@ -60,43 +70,31 @@ class PositionManipulator:
             currency_spread = self.info[currency_symbol]['SpreadProc']
             currency_prices['ask'][currency_symbol] = currency_bid.iloc[-1]*(1+currency_spread)*(1.0+margin)
         
-        self.disconnect()
-        
+        self.disconnect(False)
         return currency_prices
     
-    def OpenPosition(self,
-                     K: float,
-                     filename_load: str, 
-                     filename_save: str, 
-                     filepath: str = 'Recommendations'):
-        
-        pl = PortfolioLoader(filename_load, filepath)
-        statDict = pl.statDict
-        
+    def Recalculate(self, K: float):
         print(f"Skład portfela przeliczony dla kwoty {K} PLN:")
-        for key, val in statDict['SkładPortfela'].items():
+        for key, val in self.statDict['SkładPortfela'].items():
             print(f"\t{key}: {K*val/100 :.2f} PLN")
+    
+    def OpenPosition(self, filename_save: str):
         
         currencies = self.get_currencies()
-        statDict['KursyWalutoweOtwarcia'] = currencies
-        statDict['CzasOtwarcia'] = now(False)
+        self.statDict['KursyWalutoweOtwarcia'] = currencies
+        self.statDict['CzasOtwarcia'] = now(False)
         
-        SaveDict(statDict, filename_save, filepath='Positions')
+        SaveDict(self.statDict, filename_save, 'Positions')
         
-    def AnalyzeCurrentPosition(self,
-                               filename: str,
-                               filepath: str = 'Positions',
-                               omit_symbols: list = ['COSMOS']):
-        
-        pl = PortfolioLoader(filename, filepath)
-        
-        self.connect()
+    def AnalyzePosition(self, omit_symbols: list = ['COSMOS']):
+                
+        self.connect(False)
         args = {
             "openedOnly": True
         }
         response = self.client.commandExecute('getTrades', args)
         if response['status'] == False:
-            self.disconnect()
+            self.disconnect(False)
             raise Warning(f"[BŁĄD: {now(False)}] Błąd wysyłania zapytania do API: {response['errorDescr']}")
         else:
             currentTrades = {x['symbol']:
@@ -107,17 +105,17 @@ class PositionManipulator:
                         }
                     for x in response['returnData'] if x['symbol'] not in omit_symbols}
             
-            self.disconnect()
+            self.disconnect(False)
             
             try:
-                exchange_rates_open = pl.statDict['KursyWalutoweOtwarcia']
+                exchange_rates_open = self.statDict['KursyWalutoweOtwarcia']
             except KeyError:
                 print("[OSTRZEŻENIE] W pliku nie zapisano kursów walutowych w chwili otwarcia pozycji.")
                 exchange_rates_open = None
                 
             return PositionAnalyzer(currentTrades, 
                                     self.info, 
-                                    pl.portfolio, 
+                                    self.portfolio, 
                                     exchange_rates_open=exchange_rates_open)
         
         

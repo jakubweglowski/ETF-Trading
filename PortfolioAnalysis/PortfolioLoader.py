@@ -31,6 +31,6 @@ class PortfolioLoader:
         return PortfolioPerformance(self.portfolio,
                                     returnRates,
                                     self.freq,
-                                    self.model,
                                     self.risk_method,
+                                    self.model,
                                     data=data)
