@@ -104,10 +104,10 @@ class Backtest:
             print()
             
             summary_dict[i+1] = {'ExpectedReturn': expected_return,
-                            'TrueReturn': true_return,
-                            'ConfIntLow': conf_int[0],
-                            'ConfIntHigh': conf_int[1],
-                            'SharpeRatio': sharpe_ratio}
+                                 'TrueReturn': true_return,
+                                 'ConfIntLow': conf_int[0],
+                                 'ConfIntHigh': conf_int[1],
+                                 'SharpeRatio': sharpe_ratio}
 
         summary = pd.DataFrame(summary_dict).T
         summary['InConfInt'] = summary['TrueReturn'].between(summary['ConfIntLow'], summary['ConfIntHigh'])
