@@ -8,10 +8,13 @@ from MarkowitzAnalysis.ReturnAnalysis import *
 class Backtest:
     
     def __init__(self, start: str, end: str, freq: str, len_train: int):
+        
         self.start = start
         self.end = end
         self.freq = freq
         self.len_train = len_train + 1
+        
+        self.summary = None
         
     def generate_train_test(self):
         
@@ -35,10 +38,7 @@ class Backtest:
         
         return train, test
     
-    def getSummary(self,
-                   success_threshold: float = 1.0,
-                   sharpe_threshold: float = 1.5,
-                   low_CI_threshold: float = 1.5):
+    def runTrainTest(self):
         
         train, test = self.generate_train_test()
         
@@ -106,16 +106,23 @@ class Backtest:
         summary['Error'] = (summary['TrueReturn'] - summary['ExpectedReturn'])
         summary['InConfInt'] = summary['TrueReturn'].between(summary['ConfIntLow'], summary['ConfIntHigh'])
         
+        self.summary = summary
+    
+    def getSummary(self,
+                           success_threshold: float = 1.0,
+                           sharpe_threshold: float = 1.5,
+                           low_CI_threshold: float = 1.5):
+        
         # Żeby otworzyć pozycję, muszą być łącznie spełnione warunki:
         #   - Sharpe Ratio musi być dostatecznie duże
         #   - Dolny kraniec przedziału ufności musi być dostatecznie duży
-        summary['WasOpened'] = (summary['SharpeRatio'] > sharpe_threshold) & (summary['ConfIntLow'] > low_CI_threshold)
+        self.summary['WasOpened'] = (self.summary['SharpeRatio'] > sharpe_threshold) & (self.summary['ConfIntLow'] > low_CI_threshold)
         
         # Żeby uznać pozycję za sukces, muszą być łącznie spełnione warunki:
         #   - Pozycja musiała zostać otwarta
         #   - Rzeczywisty zwrot musi być dostatecznie duży
-        summary['WasSuccessful'] = summary['WasOpened'] & (summary['TrueReturn'] > success_threshold)
+        self.summary['WasSuccessful'] = self.summary['WasOpened'] & (self.summary['TrueReturn'] > success_threshold)
         
-        return summary
+        return self.summary
     
     
