@@ -123,7 +123,7 @@ class DataLoader:
                             append: bool = True,
                             verbose: bool = False):
         
-        data = LoadData(filename, filepath)
+        data = LoadData(filename, filepath).copy()
         data.index = pd.DatetimeIndex(data.index)
         symbols = list(data.columns)
         
