@@ -118,7 +118,7 @@ class DataLoader:
     def loadInstrumentsData(self,
                             start_date: str,
                             end_date: str = now(),
-                            filename: str = 'InstrumentsData1',
+                            filename: str = 'InstrumentsData',
                             filepath: str = 'Data',
                             append: bool = True,
                             verbose: bool = False):
