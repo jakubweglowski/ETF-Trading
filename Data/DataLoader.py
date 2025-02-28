@@ -1,26 +1,13 @@
 import pandas as pd
 from datetime import datetime as dt, timedelta as tmd
 import time
-from importlib import reload
 
 from APICommunication.xAPIConnector import *
 
-import Functions.FileCommunication
-reload(Functions.FileCommunication)
 from Functions.FileCommunication import *
-
-import Functions.TimeFunctions
-reload(Functions.TimeFunctions)
 from Functions.TimeFunctions import *
-
-import Functions.TechnicalFunctions
-reload(Functions.TechnicalFunctions)
 from Functions.TechnicalFunctions import *
-
-import PositionAnalysis.OpenedPositionSummary
-reload(PositionAnalysis.OpenedPositionSummary)
 from PositionAnalysis.OpenedPositionSummary import *
-
 from Functions.Items import *
 
 class DataLoader:
@@ -43,7 +30,7 @@ class DataLoader:
     def getInstrumentsData(self,
                 symbols: list[str],
                 start_date: str,
-                end_date: str | None = None,
+                end_date: str = now(),
                 period: str = '1D',
                 reconnect_after: int = 10,
                 verbose: bool = False):
@@ -51,28 +38,22 @@ class DataLoader:
         for x in currencies:
             if x not in symbols: symbols.append(x)
         
-        end_date = (dt.strptime(end_date, '%Y-%m-%d') if end_date is not None else dt.today())
-        endUNIXTIME = int(dt.timestamp(end_date) * 1000)
-        start_date = dt.strptime(start_date, '%Y-%m-%d') + tmd(days=-1)
-        startUNIXTIME = int(dt.timestamp(start_date) * 1000)
+        endUNIXTIME = str_to_UNIX(end_date, full=False)
+        start_date = shift_date(start_date, days=-1)
+        startUNIXTIME = str_to_UNIX(start_date)
         
         finalData = {}
         connected = False
         
         beginning_time = time.time()
+        n_items = len(symbols)
         for i, symbol in enumerate(symbols):
             
             if symbol in currencies: print(f"\tPobieram {symbol}")
             if i % 100 == 0: 
-                print(f"\tPozostało {(1-i/len(symbols)):.0%}.") 
-                if i > 0:         
-                    # estymujemy pozostały czas obliczeń
-                    time_of_calc = time.time() - beginning_time
-                    speed_of_calc = time_of_calc/i
-                    time_left = speed_of_calc*(len(symbols)-i) # pozostały czas w sekundach
-                    time_left_min = int(time_left/60) # ile minut do końca
-                    time_left_sec = time_left - 60*time_left_min # ile sekund ponad pełną minutę
-                    print(f"\tEstymowany pozostały czas: {time_left_min:.0f} minut {time_left_sec:.0f} sekund.")
+                print(f"\tPozostało {(1-i/n_items):.0%}.") 
+                if i > 0:
+                    estimate_time_to_end(i, n_items, beginning_time)         
                     
             if i % reconnect_after == 0 or not connected:
                 try:
@@ -86,32 +67,26 @@ class DataLoader:
                 
             print(f"\t\t[{(i%reconnect_after) + 1}] Pobieram {symbol}.")
             
-            args = {'info': {
-                'end': endUNIXTIME,
-                'start': startUNIXTIME,
-                'symbol': symbol,
-                'period': period_dict[period]
-            }}
-            print(f"\t\tWysyłam zapytanie do API...", end=' ')
-            response = self.client.commandExecute('getChartRangeRequest', arguments=args)
-            if response['status'] == False:
-                print(f"[OSTRZEŻENIE: {now(False)}] Błąd wysyłania zapytania do API przy pobieraniu {symbol}: {response['errorDescr']}")
-            else:
-                print("sukces!")
-                try:                    
-                    finalData[symbol] = XTB_to_pandas(response)
-                    print("\t\t\t[INFO] Dane zapisane.")
-                except:
-                    print(f"\t\t\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
+            response = getSymbol(symbol=symbol,
+                      period=period,
+                      start=startUNIXTIME,
+                      end=endUNIXTIME,
+                      client=self.client)
+            try:                    
+                finalData[symbol] = XTB_to_pandas(response)
+                print("\t\t\t[INFO] Dane zapisane.")
+            except:
+                print(f"\t\t\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
 
             if i % reconnect_after == (reconnect_after-1) and connected:
                 self.disconnect(verbose)
-                time.sleep(27)
+                time.sleep(18)
                 
-            time.sleep(3)
+            time.sleep(2)
             
         print(f"\tZakończono pobieranie")
-        if connected: self.disconnect(verbose)       
+        if connected: self.disconnect(verbose)
+            
         return pd.DataFrame(finalData)
     
     

@@ -4,6 +4,9 @@ import logging
 import time
 import ssl
 
+from Functions.Items import *
+from Functions.TechnicalFunctions import *
+
 # set to true on debug environment only
 DEBUG = True
 
@@ -165,4 +168,23 @@ def baseCommand(commandName, arguments=None):
 
 def loginCommand(userId, password, appName=''):
     return baseCommand('login', dict(userId=userId, password=password, appName=appName))
+
+def getSymbol(symbol,
+              period,
+              start,
+              end,
+              client):
+            
+            args = {'info': {
+                'end': end,
+                'start': start,
+                'symbol': symbol,
+                'period': period_dict[period]
+            }}
+            print(f"\t\tWysyłam zapytanie do API...", end=' ')
+            response = client.commandExecute('getChartRangeRequest', arguments=args)
+            if response['status'] == False:
+                print(f"[OSTRZEŻENIE: {now(False)}] Błąd wysyłania zapytania do API przy pobieraniu {symbol}: {response['errorDescr']}")
+            else:
+                return response
 
