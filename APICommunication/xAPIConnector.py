@@ -169,22 +169,50 @@ def baseCommand(commandName, arguments=None):
 def loginCommand(userId, password, appName=''):
     return baseCommand('login', dict(userId=userId, password=password, appName=appName))
 
-def getSymbol(symbol,
-              period,
-              start,
-              end,
-              client):
+def getAllSymbols(client: APIClient):
+    response = client.commandExecute('getAllSymbols')
+    if response['status'] == False:
+        raise Warning(f"[BŁĄD: {now(False)}] Błąd wysyłania zapytania do API: {response['errorDescr']}")
+    else:
+        return response
+    
+def getSymbol(symbol: str,
+              client: APIClient,
+              period: str | None = None,
+              start: str | None = None,
+              end: str | None = None,
+              just_now: bool = False):
             
-            args = {'info': {
-                'end': end,
-                'start': start,
-                'symbol': symbol,
-                'period': period_dict[period]
-            }}
-            print(f"\t\tWysyłam zapytanie do API...", end=' ')
-            response = client.commandExecute('getChartRangeRequest', arguments=args)
-            if response['status'] == False:
-                print(f"[OSTRZEŻENIE: {now(False)}] Błąd wysyłania zapytania do API przy pobieraniu {symbol}: {response['errorDescr']}")
+            if just_now:
+                args = {'symbol': 
+                    symbol
+                }
+                print(f"\t\tWysyłam zapytanie do API...", end=' ')
+                response = client.commandExecute('getSymbol', arguments=args)
+                if response['status'] == False:
+                    print(f"\n[OSTRZEŻENIE: {now(False)}] Błąd wysyłania zapytania do API przy pobieraniu {symbol}: {response['errorDescr']}")
+                else:
+                    return {
+                        'ask': response['returnData']['ask'],
+                        'bid': response['returnData']['bid'] 
+                    }
+                
             else:
-                return response
+                endUNIXTIME = str_to_UNIX(end, full=False)
+                
+                start = shift_date(start, days=-1)
+                startUNIXTIME = str_to_UNIX(start, full=False)
+            
+                args = {'info': {
+                    'end': endUNIXTIME,
+                    'start': startUNIXTIME,
+                    'symbol': symbol,
+                    'period': period_dict[period]
+                }}
+                print(f"\t\tWysyłam zapytanie do API...", end=' ')
+                response = client.commandExecute('getChartRangeRequest', arguments=args)
+                if response['status'] == False:
+                    print(f"\n[OSTRZEŻENIE: {now(False)}] Błąd wysyłania zapytania do API przy pobieraniu {symbol}: {response['errorDescr']}")
+                else:
+                    return response
 

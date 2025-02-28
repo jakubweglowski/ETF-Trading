@@ -29,18 +29,14 @@ class DataLoader:
         
     def getInstrumentsData(self,
                 symbols: list[str],
-                start_date: str,
-                end_date: str = now(),
+                start: str,
+                end: str = now(),
                 period: str = '1D',
                 reconnect_after: int = 10,
                 verbose: bool = False):
         
         for x in currencies:
             if x not in symbols: symbols.append(x)
-        
-        endUNIXTIME = str_to_UNIX(end_date, full=False)
-        start_date = shift_date(start_date, days=-1)
-        startUNIXTIME = str_to_UNIX(start_date)
         
         finalData = {}
         connected = False
@@ -69,14 +65,14 @@ class DataLoader:
             
             response = getSymbol(symbol=symbol,
                       period=period,
-                      start=startUNIXTIME,
-                      end=endUNIXTIME,
+                      start=start,
+                      end=end,
                       client=self.client)
             try:                    
                 finalData[symbol] = XTB_to_pandas(response)
-                print("\t\t\t[INFO] Dane zapisane.")
+                print("\n\t\t[INFO] Dane zapisane.")
             except:
-                print(f"\t\t\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
+                print(f"\n\t\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
 
             if i % reconnect_after == (reconnect_after-1) and connected:
                 self.disconnect(verbose)
@@ -105,7 +101,7 @@ class DataLoader:
         old_start = data.index[0].strftime('%Y-%m-%d')
         if start_date < old_start:
             print(f"\tPobieramy brakujące dane od {start_date} do {old_start}...")
-            remaining_data_before = self.getInstrumentsData(symbols, start_date, shift_date(data.index[0].strftime("%Y-%m-%d"), -1).strftime("%Y-%m-%d"), verbose=verbose)
+            remaining_data_before = self.getInstrumentsData(symbols, start_date, shift_date(data.index[0].strftime("%Y-%m-%d"), days=-1), verbose=verbose)
             new_symbols = [x for x in symbols if x in remaining_data_before.columns]
             print(f"\tZagubiliśmy {len(symbols)-len(new_symbols)} instrumentów.")
             data = pd.concat([data.loc[:, new_symbols], remaining_data_before.loc[:, new_symbols]])
@@ -114,7 +110,7 @@ class DataLoader:
         old_end = data.index[-1].strftime('%Y-%m-%d')
         if old_end < end_date:
             print(f"\tPobieramy brakujące dane od {old_end} do {end_date}...")
-            remaining_data_after = self.getInstrumentsData(symbols, shift_date(data.index[-1].strftime("%Y-%m-%d"), 1).strftime("%Y-%m-%d"), end_date, verbose=verbose)
+            remaining_data_after = self.getInstrumentsData(symbols, shift_date(data.index[-1].strftime("%Y-%m-%d"), days=1), end_date, verbose=verbose)
             new_symbols = [x for x in symbols if x in remaining_data_after.columns]
             print(f"\tZagubiliśmy {len(symbols)-len(new_symbols)} instrumentów.")
             data = pd.concat([data.loc[:, new_symbols], remaining_data_after.loc[:, new_symbols]])
@@ -128,33 +124,27 @@ class DataLoader:
     
     
     def getInstrumentsInfo(self):
+        
         self.connect()
-        response = self.client.commandExecute('getAllSymbols')
-        if response['status'] == False:
-            self.disconnect()
-            raise Warning(f"[BŁĄD: {now(False)}] Błąd wysyłania zapytania do API: {response['errorDescr']}")
-        else:
-            etfs = [x 
-                    for x in response['returnData']
-                    if (
-                            (x['symbol'].find('_5') == -1 and x['categoryName'] == 'ETF')
-                            or
-                            x['symbol'] in ['EURPLN', 'USDPLN', 'GBPPLN', 'CHFPLN']
-                        )
-                    ]
-            
-            info = {x['symbol']:
-                        {'Waluta': x['currency'], 
-                        'SpreadAbs': x['spreadRaw'],
-                        'SpreadProc': round(x['spreadRaw']/x['bid'], 4),
-                        'Opis': x['description'],
-                        'Typ': x['type']
-                        }
-                    for x in etfs}
-            self.disconnect()
-            
-            assert all([(x in list(info.keys())) for x in ['EURPLN', 'USDPLN', 'GBPPLN', 'CHFPLN']]), f"[BŁĄD] Nie udało się załadować info dot. przynajmniej jednej z walut niezbędnych do dalszej analizy"
-            return info
+        response = getAllSymbols(self.client)
+        self.disconnect()
+        
+        info = {x['symbol']: {
+            'Waluta': x['currency'], 
+            'SpreadAbs': x['spreadRaw'],
+            'SpreadProc': round(x['spreadRaw']/x['bid'], 4),
+            'Opis': x['description'],
+            'Typ': x['type']
+            }
+            for x in response['returnData']
+            if (
+                (x['symbol'].find('_5') == -1 and x['categoryName'] == 'ETF')
+                or
+                x['symbol'] in ['EURPLN', 'USDPLN', 'GBPPLN', 'CHFPLN']
+            )}
+        
+        assert all([(x in list(info.keys())) for x in ['EURPLN', 'USDPLN', 'GBPPLN', 'CHFPLN']]), f"[BŁĄD] Nie udało się załadować info dot. przynajmniej jednej z walut niezbędnych do dalszej analizy."
+        return info
     
     
     def loadInstrumentsInfo(self, filename: str = 'InstrumentsInfo', filepath: str = 'Data'):

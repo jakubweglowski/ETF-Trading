@@ -41,34 +41,22 @@ class PositionManipulator:
     def get_currencies(self, margin=0.005):
         
         # wgrywamy kurs walutowy w chwili obecnej
-        dt_start = dt.now() + tmd(days=-2)
-        dt_end = dt.now()
-        
-        start, end = dt_start.strftime("%Y-%m-%d %H:%M"), dt_end.strftime("%Y-%m-%d %H:%M")
-        startUNIXTIME, endUNIXTIME = str_to_UNIX(start+':00'), str_to_UNIX(end+':00')
-
         currency_prices = {'bid': {}, 'ask': {}}
         
         self.connect(False)
         for currency_symbol in currencies:
-            args = {'info': {
-                            'end': endUNIXTIME,
-                            'start': startUNIXTIME,
-                            'symbol': currency_symbol,
-                            'period': period_dict['1min']
-            }}
-            response = self.client.commandExecute('getChartRangeRequest', arguments=args)
-
+            response = getSymbol(symbol=currency_symbol,
+                                 client=self.client,
+                                 just_now=True)
             try:
-                currency_bid = XTB_to_pandas(response)
+                currency_bid = response['bid']
+                currency_ask = response['ask']
             except:
                 print(f"[BŁĄD] Błąd pobierania danych z API: nie można pobrać aktualnego kursu walutowego.")
-                currency_bid = pd.Series({0: pd.NA})
+                currency_bid = 0.0
 
-            currency_prices['bid'][currency_symbol] = currency_bid.iloc[-1]*(1.0-margin)
-            
-            currency_spread = self.info[currency_symbol]['SpreadProc']
-            currency_prices['ask'][currency_symbol] = currency_bid.iloc[-1]*(1+currency_spread)*(1.0+margin)
+            currency_prices['bid'][currency_symbol] = currency_bid*(1.0-margin)
+            currency_prices['ask'][currency_symbol] = currency_ask*(1.0+margin)
         
         self.disconnect(False)
         return currency_prices

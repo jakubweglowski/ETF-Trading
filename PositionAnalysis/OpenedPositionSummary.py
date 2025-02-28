@@ -53,29 +53,25 @@ class OpenedPositionSummary:
                     
         if self.exchange_rates_open is not None:
             currency_open = self.exchange_rates_open['ask'][currency_symbol]
-        else:
-                        
+        else:        
             # wgrywamy kurs walutowy w chwili zakupu instrumentu
-            dt_start = dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S") + tmd(hours=-2)
-            dt_end = dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S") + tmd(hours=2)
-
-            start, end = dt_start.strftime("%Y-%m-%d %H:%M:%S"), dt_end.strftime("%Y-%m-%d %H:%M:%S")
-            startUNIXTIME, endUNIXTIME = str_to_UNIX(start), str_to_UNIX(end)
-            args = {'info': {
-                            'end': endUNIXTIME,
-                            'start': startUNIXTIME,
-                            'symbol': currency_symbol,
-                            'period': period_dict['1h']
-            }}
+            start = (dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S") + tmd(hours=-2)).strftime("%Y-%m-%d %H:%M:%S")
+            end = (dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S") + tmd(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
+            
             self.connect(False)
-            response = self.client.commandExecute('getChartRangeRequest', arguments=args)
+            response = getSymbol(symbol=currency_symbol,
+                             period='1h',
+                             start=start,
+                             end=end,
+                             client=self.client)
             self.disconnect(False)
-            
-            if response['status'] == False:
-                print(f"[BŁĄD] Błąd pobierania danych z API: {response['errorDescr']}")
-                return -1
-            
-            currency_bid = XTB_to_pandas(response)
+            try:
+                currency_bid = XTB_to_pandas(response)
+            except:
+                print(f"[BŁĄD] Błąd pobierania danych z API: nie można pobrać aktualnego kursu walutowego.")
+                print(response)
+                currency_bid = pd.Series({0: pd.NA})
+                
             currency_spread = self.info[currency_symbol]['SpreadProc']
             currency_ask = currency_bid*(1+currency_spread)
 
@@ -83,31 +79,20 @@ class OpenedPositionSummary:
             opening_time = round_to_nearest_hour(opening_time).strftime("%Y-%m-%d %H")+':00:00'
             currency_open = currency_ask.loc[opening_time]*(1.0+margin)
         
-        # wgrywamy kurs walutowy w chwili obecnej
-        dt_start = dt.now() + tmd(days=-2)
-        dt_end = dt.now()
-        
-        start, end = dt_start.strftime("%Y-%m-%d %H:%M"), dt_end.strftime("%Y-%m-%d %H:%M")
-        startUNIXTIME, endUNIXTIME = str_to_UNIX(start+':00'), str_to_UNIX(end+':00')
-
-        args = {'info': {
-                        'end': endUNIXTIME,
-                        'start': startUNIXTIME,
-                        'symbol': currency_symbol,
-                        'period': period_dict['1min']
-        }}
-        
+        # wgrywamy kurs walutowy w chwili obecnej       
         self.connect(False)
-        response = self.client.commandExecute('getChartRangeRequest', arguments=args)
+        response = getSymbol(symbol=currency_symbol,
+                             client=self.client,
+                             just_now=True)
         self.disconnect(False)
         try:
-            currency_bid = XTB_to_pandas(response)
+            currency_bid = response['bid']
         except:
             print(f"[BŁĄD] Błąd pobierania danych z API: nie można pobrać aktualnego kursu walutowego.")
             print(response)
-            currency_bid = pd.Series({0: pd.NA})
+            currency_bid = 0.0
 
-        currency_now = currency_bid.iloc[-1]*(1.0-margin)
+        currency_now = currency_bid*(1.0-margin)
                 
         return (currency_open, currency_now)
         

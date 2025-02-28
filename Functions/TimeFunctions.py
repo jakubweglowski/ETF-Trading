@@ -25,8 +25,8 @@ def str_to_UNIX(date, full: bool = True) -> int:
     date_tmp = dt.timestamp(date_dt)
     return int(date_tmp * 1000)
     
-def shift_date(date: str, days: int):
-    return dt.strptime(date, "%Y-%m-%d") + tmd(days=days)
+def shift_date(date: str, days: int) -> str:
+    return (dt.strptime(date, "%Y-%m-%d") + tmd(days=days)).strftime("%Y-%m-%d")
 
 def recalculate_frequency(freq):
     if freq[-1].lower() == 'd':
