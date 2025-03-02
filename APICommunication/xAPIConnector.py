@@ -209,7 +209,7 @@ def getSymbol(symbol: str,
                     'symbol': symbol,
                     'period': period_dict[period]
                 }}
-                print(f"\t\tWysyłam zapytanie do API...", end=' ')
+                print(f"\t\t\tWysyłam zapytanie do API...", end=' ')
                 response = client.commandExecute('getChartRangeRequest', arguments=args)
                 if response['status'] == False:
                     print(f"\n[OSTRZEŻENIE: {now(False)}] Błąd wysyłania zapytania do API przy pobieraniu {symbol}: {response['errorDescr']}")

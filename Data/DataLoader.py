@@ -70,9 +70,9 @@ class DataLoader:
                       client=self.client)
             try:                    
                 finalData[symbol] = XTB_to_pandas(response)
-                print("\n\t\t[INFO] Dane zapisane.")
+                print("\n\t\t\t[INFO] Dane zapisane.")
             except:
-                print(f"\n\t\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
+                print(f"\n\t\t\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
 
             if i % reconnect_after == (reconnect_after-1) and connected:
                 self.disconnect(verbose)
@@ -133,6 +133,8 @@ class DataLoader:
             'Waluta': x['currency'], 
             'SpreadAbs': x['spreadRaw'],
             'SpreadProc': round(x['spreadRaw']/x['bid'], 4),
+            'WolumenMinimalny': x['lotMin'],
+            'WolumenKrok': x['lotStep'],
             'Opis': x['description'],
             'Typ': x['type']
             }
