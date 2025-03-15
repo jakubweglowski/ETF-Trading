@@ -1,8 +1,6 @@
 import pandas as pd
 from datetime import datetime as dt, timedelta as tmd
 
-import APICommunication.config as cfg
-from APICommunication.xAPIConnector import *
 from Functions.TimeFunctions import *
 from Functions.TechnicalFunctions import *
 
@@ -11,8 +9,6 @@ from Functions.Items import *
 class OpenedPositionSummary:
     
     def __init__(self,
-                 user_id: str,
-                 pwd: str,
                  currentTrades: dict,
                  info: dict,
                  portfolio: dict | None = None, # portfel z wagami
@@ -31,18 +27,6 @@ class OpenedPositionSummary:
         self.currentTrades = {key: val
                               for key, val in currentTrades.items() if key in self.portfolio.keys()}
 
-        self.client = None
-        self.user_id = user_id
-        self.pwd = pwd
-        
-    def connect(self, verbose: bool = True):    
-        self.client = APIClient()
-        if verbose: print(f"\t[{now(False)}] Loguję do API...")
-        self.client.execute(loginCommand(self.user_id, self.pwd))
-    
-    def disconnect(self, verbose: bool = True):
-        if verbose: print(f"\t[{now(False)}] Wylogowuję z API...")
-        self.client.disconnect()
         
     def get_currency(self, symbol: str, margin: float = 0.005):
         
@@ -80,19 +64,7 @@ class OpenedPositionSummary:
             currency_open = currency_ask.loc[opening_time]*(1.0+margin)
         
         # wgrywamy kurs walutowy w chwili obecnej       
-        self.connect(False)
-        response = getSymbol(symbol=currency_symbol,
-                             client=self.client,
-                             just_now=True)
-        self.disconnect(False)
-        try:
-            currency_bid = response['bid']
-        except:
-            print(f"[BŁĄD] Błąd pobierania danych z API: nie można pobrać aktualnego kursu walutowego.")
-            print(response)
-            currency_bid = 0.0
-
-        currency_now = currency_bid*(1.0-margin)
+        currency_now = getCurrencies(info=self.info)[currency_symbol]['bid']
                 
         return (currency_open, currency_now)
         

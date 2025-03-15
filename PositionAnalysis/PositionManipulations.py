@@ -1,65 +1,25 @@
 from datetime import datetime as dt, timedelta as tmd
 import pandas as pd
 
-from APICommunication.xAPIConnector import *
-
 from PortfolioAnalysis.PortfolioLoader import PortfolioLoader
 from PositionAnalysis.OpenedPositionSummary import OpenedPositionSummary
-from Functions.TechnicalFunctions import XTB_to_pandas
+from Functions.TechnicalFunctions import *
 from Functions.FileCommunication import SaveDict
 from Functions.TimeFunctions import str_to_UNIX, now
 from Functions.Items import period_dict, currencies
 
 class PositionManipulator:
     
-    def __init__(self, 
-                 user_id: str, 
-                 pwd: str, 
+    def __init__(self,
                  info: dict,
                  filename_load: str,
                  filepath_load: str):
         
-        self.user_id = user_id
-        self.pwd = pwd
-        
         self.info = info
-        self.client = None
         
         pl = PortfolioLoader(filename_load, filepath_load)
         self.statDict = pl.statDict
         self.portfolio = pl.portfolio
-        
-    def connect(self, verbose: bool = True):    
-        self.client = APIClient()
-        if verbose: print(f"\t[{now(False)}] Loguję do API...")
-        self.client.execute(loginCommand(self.user_id, self.pwd))
-    
-    def disconnect(self, verbose: bool = True):
-        if verbose: print(f"\t[{now(False)}] Wylogowuję z API...")
-        self.client.disconnect()
-        
-    def get_currencies(self, margin=0.005):
-        
-        # wgrywamy kurs walutowy w chwili obecnej
-        currency_prices = {'bid': {}, 'ask': {}}
-        
-        self.connect(False)
-        for currency_symbol in currencies:
-            response = getSymbol(symbol=currency_symbol,
-                                 client=self.client,
-                                 just_now=True)
-            try:
-                currency_bid = response['bid']
-                currency_ask = response['ask']
-            except:
-                print(f"[BŁĄD] Błąd pobierania danych z API: nie można pobrać aktualnego kursu walutowego.")
-                currency_bid = 0.0
-
-            currency_prices['bid'][currency_symbol] = currency_bid*(1.0-margin)
-            currency_prices['ask'][currency_symbol] = currency_ask*(1.0+margin)
-        
-        self.disconnect(False)
-        return currency_prices
     
     def Recalculate(self, K: float):
         print(f"Skład portfela przeliczony dla kwoty {K} PLN:")
@@ -68,7 +28,7 @@ class PositionManipulator:
     
     def OpenPosition(self, filename_save: str):
         
-        currencies = self.get_currencies()
+        currencies = getCurrencies(info=self.info)
         self.statDict['KursyWalutoweOtwarcia'] = currencies
         self.statDict['CzasOtwarcia'] = now(False)
         

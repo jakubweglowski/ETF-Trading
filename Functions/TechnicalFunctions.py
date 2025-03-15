@@ -1,22 +1,50 @@
 import pandas as pd
+import yfinance as yf
 from datetime import datetime as dt
-from importlib import reload
 
-import Functions.TimeFunctions
-reload(Functions.TimeFunctions)
 from Functions.TimeFunctions import *
+from Functions.Items import *
 
-def XTB_to_pandas(response):
-    data = pd.DataFrame.from_dict(response['returnData']['rateInfos'])
-    digits = response['returnData']['digits']
+def getSymbol(symbol: str, 
+              period: str, 
+              start: str | None, 
+              end: str | None,
+              just_now: bool = True) -> pd.Series:
+    
+    ticker = yf.Ticker(symbol)
+    
+    if just_now:
+        y = ticker.history(period='1D', interval='1m')['Close']
+        return y[-1]
+    
+    else:
+        y = ticker.history(start=start, end=end, interval=period)['Close']
+        assert len(y) > 0, f"Brak danych dla {symbol} w okresie od {start} do {end}."
+        y.index = y.index.strftime('%Y-%m-%d')
+        y = y.rename(symbol)
+        return y
+    
+    
+def getCurrencies(info: dict, margin=0.005):
+        
+        # wgrywamy kursy walutowe w chwili obecnej
+        currency_prices = {'bid': {}, 'ask': {}}
+        
+        for currency_symbol in currencies:
+            response = getSymbol(symbol=currency_symbol+'=X', just_now=True)
+            try:
+                currency_bid = response['bid']
+                currency_ask = currency_bid + info[currency_symbol]['SpreadAbs']
+            except:
+                print(f"[BŁĄD] Błąd pobierania danych: nie można pobrać aktualnego kursu walutowego {currency_symbol}.")
+                currency_bid = 0.0
+                currency_ask = 0.0
 
-    data['Date'] = data['ctm'].apply(lambda x: dt.fromtimestamp(x/1000))
-    data['Price'] = (data['open'] + data['close'])/(10**digits)
-    data = data.loc[:, ['Date', 'Price']]
-    data = data.set_index('Date')
-    data = data.iloc[:, 0]
+            currency_prices['bid'][currency_symbol] = currency_bid*(1.0-margin)
+            currency_prices['ask'][currency_symbol] = currency_ask*(1.0+margin)
+        
+        return currency_prices
 
-    return data
 
 def summary_from_dict(statDict):
     summary = f"Opis wygenerowany {statDict['CzasAnalizy']}.\n"

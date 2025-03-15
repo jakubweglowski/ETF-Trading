@@ -1,8 +1,7 @@
 import pandas as pd
 from datetime import datetime as dt, timedelta as tmd
 import time
-
-from APICommunication.xAPIConnector import *
+import yfinance as yf
 
 from Functions.FileCommunication import *
 from Functions.TimeFunctions import *
@@ -11,77 +10,48 @@ from PositionAnalysis.OpenedPositionSummary import *
 from Functions.Items import *
 
 class DataLoader:
-    def __init__(self, user_id, pwd):
-        
-        self.user_id = user_id
-        self.pwd = pwd
-        
-        self.client = None
-        
-    def connect(self, verbose: bool = True):    
-        self.client = APIClient()
-        if verbose: print(f"\t[{now(False)}] Loguję do API...")
-        self.client.execute(loginCommand(self.user_id, self.pwd))
     
-    def disconnect(self, verbose: bool = True):
-        if verbose: print(f"\t[{now(False)}] Wylogowuję z API...")
-        self.client.disconnect()
+    def __init__(self):
+        pass
         
     def getInstrumentsData(self,
                 symbols: list[str],
                 start: str,
                 end: str = now(),
                 period: str = '1D',
-                reconnect_after: int = 10,
                 verbose: bool = False):
         
+        print(f"[{now(False)}] Rozpoczynam pobieranie danych dla {len(symbols)} instrumentów.")
         for x in currencies:
             if x not in symbols: symbols.append(x)
         
         finalData = {}
-        connected = False
         
         beginning_time = time.time()
         n_items = len(symbols)
         for i, symbol in enumerate(symbols):
             
-            if symbol in currencies: print(f"\tPobieram {symbol}")
-            if i % 100 == 0: 
+            if symbol in currencies:
+                s = symbol+'=X'
+                if verbose: print(f"\tPobieram {symbol}")
+            else:
+                s = symbol
+                
+            if verbose and (i % 100 == 0): 
                 print(f"\tPozostało {(1-i/n_items):.0%}.") 
                 if i > 0:
                     estimate_time_to_end(i, n_items, beginning_time)         
-                    
-            if i % reconnect_after == 0 or not connected:
-                try:
-                    self.connect(verbose)
-                    connected = True
-                except:
-                    print(f"\t[BŁĄD: {now(False)}] Błąd połączenia z API przy pobieraniu {symbol}")
-                    self.disconnect()
-                    connected = False
-                    continue            
-                
-            print(f"\t\t[{(i%reconnect_after) + 1}] Pobieram {symbol}.")
-            
-            response = getSymbol(symbol=symbol,
-                      period=period,
-                      start=start,
-                      end=end,
-                      client=self.client)
-            try:                    
-                finalData[symbol] = XTB_to_pandas(response)
-                print("\n\t\t\t[INFO] Dane zapisane.")
+            try:        
+                finalData[symbol] = getSymbol(symbol=s,
+                                              period=period,
+                                              start=start,
+                                              end=end)
             except:
-                print(f"\n\t\t\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
+                print(f"\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
 
-            if i % reconnect_after == (reconnect_after-1) and connected:
-                self.disconnect(verbose)
-                time.sleep(18)
-                
-            time.sleep(2)
+            time.sleep(0.2)
             
-        print(f"\tZakończono pobieranie")
-        if connected: self.disconnect(verbose)
+        print(f"Zakończono pobieranie")
             
         return pd.DataFrame(finalData)
     
@@ -120,34 +90,7 @@ class DataLoader:
         
         data = data[(data.index >= start_date) & (data.index <= end_date)]
                 
-        return data
-    
-    
-    def getInstrumentsInfo(self):
-        
-        self.connect()
-        response = getAllSymbols(self.client)
-        self.disconnect()
-        
-        info = {x['symbol']: {
-            'Waluta': x['currency'], 
-            'SpreadAbs': x['spreadRaw'],
-            'SpreadProc': round(x['spreadRaw']/x['bid'], 4),
-            'WolumenMinimalny': x['lotMin'],
-            'WolumenKrok': x['lotStep'],
-            'Opis': x['description'],
-            'Typ': x['type']
-            }
-            for x in response['returnData']
-            if (
-                (x['symbol'].find('_5') == -1 and x['categoryName'] == 'ETF')
-                or
-                x['symbol'] in ['EURPLN', 'USDPLN', 'GBPPLN', 'CHFPLN']
-            )}
-        
-        assert all([(x in list(info.keys())) for x in ['EURPLN', 'USDPLN', 'GBPPLN', 'CHFPLN']]), f"[BŁĄD] Nie udało się załadować info dot. przynajmniej jednej z walut niezbędnych do dalszej analizy."
-        return info
-    
+        return data    
     
     def loadInstrumentsInfo(self, filename: str = 'InstrumentsInfo', filepath: str = 'Data'):
         return LoadDict(filename, filepath)

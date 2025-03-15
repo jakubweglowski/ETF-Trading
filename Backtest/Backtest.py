@@ -1,6 +1,5 @@
 import pandas as pd
 
-import APICommunication.config as cfg
 from Data.DataLoader import *
 from Data.DataCleaner import *
 from MarkowitzAnalysis.ReturnAnalysis import *
@@ -60,7 +59,7 @@ class Backtest:
             try:
                 
                 # Ładujemy całe dane na raz
-                dataloader = DataLoader(cfg.user_id, cfg.pwd)
+                dataloader = DataLoader()
             
                 print(f"[INFO] Okres {i+1} z {len(train)}. Pobieramy dane od {start_train} do {end_test}: {now(False)}")
                 data = dataloader.loadInstrumentsData(start_train, end_test)
@@ -116,21 +115,7 @@ class Backtest:
         
         self.summary = summary
     
-    def getSummary(self,
-                   success_threshold: float = 1.0,
-                   sharpe_threshold: float = 1.5,
-                   low_CI_threshold: float = 1.5):
-        
-        # Żeby otworzyć pozycję, muszą być łącznie spełnione warunki:
-        #   - Sharpe Ratio musi być dostatecznie duże
-        #   - Dolny kraniec przedziału ufności musi być dostatecznie duży
-        self.summary['WasOpened'] = (self.summary['SharpeRatio'] > sharpe_threshold) & (self.summary['ConfIntLow'] > low_CI_threshold)
-        
-        # Żeby uznać pozycję za sukces, muszą być łącznie spełnione warunki:
-        #   - Pozycja musiała zostać otwarta
-        #   - Rzeczywisty zwrot musi być dostatecznie duży
-        self.summary['WasSuccessful'] = self.summary['WasOpened'] & (self.summary['TrueReturn'] > success_threshold)
-        
+    def getSummary(self):
         return self.summary
     
     
