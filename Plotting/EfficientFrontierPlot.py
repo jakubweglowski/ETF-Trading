@@ -17,6 +17,7 @@ class EfficientFrontierPlot:
                  freq: str,
                  risk_method: str = 'oas',
                  Npoints: int = 80):
+        
         self.returnRates = returnRates
         self.freq = freq
         self.risk_method = risk_method

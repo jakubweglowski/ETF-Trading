@@ -13,7 +13,8 @@ class MarkowitzOptimization:
                  returnRates: pd.DataFrame,
                  freq: str,
                  verbose: bool = True):
-        if isinstance(freq, str): self.freq = freq
+        
+        self.freq = freq
         self.k = recalculate_frequency(freq)
         
         self.returnRates = returnRates

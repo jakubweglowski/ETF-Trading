@@ -7,7 +7,11 @@ from MarkowitzAnalysis.ReturnAnalysis import *
 
 class Backtest:
     
-    def __init__(self, start: str, end: str, freq: str, len_train: int):
+    def __init__(self,
+                 start: str,
+                 end: str,
+                 freq: str,
+                 len_train: int):
         
         self.start = start
         self.end = end
