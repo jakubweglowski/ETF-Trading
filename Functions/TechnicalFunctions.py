@@ -18,23 +18,23 @@ def reasonProperSymbol(symbol: str) -> str:
     dot_index = symbol.find('.')
     s = symbol[:dot_index] # jeśli symbol = 'P500.DE', to s = 'P500'
     
-    for ending in ['.L', '.MI', '.US', '.DE', '.SW', '.XC', '.PA', '.WA', '']:
+    endings = ['.L', '.MI', '.PA', '.SW', 
+               '.DE', '.MU', '.SG', '.UK', 
+               '.WA', '.AS', '.XC', '.XD', 
+               '.MC', '']
+    for ending in endings:
         try:
             # dokładamy nową końcówkę i sprawdzamy, czy da się pobrać symbol
             getSymbol(symbol=s+ending, period='1D', start='2025-01-01', end='2025-02-01')
-            valid_symbol = s+ending
-            print(f"\t[INFO] Znaleziono poprawny ticker dla {symbol}: {valid_symbol}.")
-            break
+            print(f"\t[INFO] Znaleziono poprawny ticker dla {symbol}: {s+ending}.")
+            return s+ending
         except:
             # próbujemy z inną końcówką
+            time.sleep(3)
             continue
-                
-    try:
-        getSymbol(symbol=valid_symbol, period='1D', start='2025-01-01', end='2025-02-01')
-        return valid_symbol
-    except:
-        print(f"\t[BŁĄD] Nie udało się znaleźć poprawnej końcówki dla {symbol}.")
-        return symbol
+                 
+    print(f"\t[BŁĄD] Nie udało się znaleźć poprawnej końcówki dla {symbol}.")
+    return ''
 
 
 def alterSymbol(symbol: str) -> str:
@@ -48,9 +48,13 @@ def alterSymbol(symbol: str) -> str:
         str: _description_
     """
     
-    s = symbol.strip('_59')
+    s = symbol.rstrip('_59')
     if s in currencies: s = s+'=X'
     elif s.find('.UK') != -1: s = s.replace('.UK', '.L')
+    elif s.find('.FR') != -1: s = s.replace('.FR', '.PA')
+    elif s.find('.NL') != -1: s = s.replace('.NL', '.AS')
+    elif s.find('.PL') != -1: s = s.replace('.PL', '.WA')
+    elif s.find('.ES') != -1: s = s.replace('.ES', '.MC')
     elif s.find('.US') != -1: s = s.strip('.US')
     else: pass
 
@@ -87,6 +91,9 @@ def getSymbol(symbol: str,
         assert len(y) > 0, f"Brak danych dla {symbol} w okresie od {start} do {end}."
         y.index = y.index.strftime('%Y-%m-%d')
         y = y.rename(symbol)
+        
+        time.sleep(2)
+        
         return y
     
     

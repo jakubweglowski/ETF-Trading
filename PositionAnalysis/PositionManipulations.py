@@ -36,6 +36,7 @@ class PositionManipulator:
         currencies = getCurrencies(info=self.info)
         self.statDict['KursyWalutoweOtwarcia'] = currencies
         self.statDict['CzasOtwarcia'] = now(False)
+        self.statDict['Rodzaj'] = 'Otwarta pozycja'
         
         SaveDict(self.statDict, filename_save, 'Positions')
     

@@ -19,13 +19,15 @@ class DataLoader:
                 start: str,
                 end: str = now(),
                 period: str = '1D',
-                verbose: bool = False) -> pd.DataFrame:
+                verbose: bool = False,
+                sleep: int = 10) -> pd.DataFrame:
         
         print(f"\tRozpoczynam pobieranie danych dla {len(symbols)} instrumentów.")
         for x in currencies:
             if x not in symbols: symbols.append(x)
         
         finalData = {} # tu zapisujemy kursy instrumentów
+        trueSymbols = {} # tu zapisujemy poprawne symbole
         
         beginning_time = time.time()
         n_items = len(symbols)
@@ -38,18 +40,25 @@ class DataLoader:
                 print(f"\tPozostało {(1-i/n_items):.0%}.") 
                 if i > 0:
                     estimate_time_to_end(i, n_items, beginning_time)         
-            try: 
-                s = reasonProperSymbol(s)       
+
+            s = reasonProperSymbol(s)
+            if s == '':
+                print(f"\t[OSTRZEŻENIE] Nie udało się pobrać {s}. Zasypiamy na {sleep} sekund...")
+                time.sleep(sleep)
+            else: 
                 finalData[symbol] = \
                     getSymbol(symbol=s,
                               period=period,
                               start=start,
                               end=end)
-            except:
-                print(f"\t[OSTRZEŻENIE] Nie udało się pobrać {s}.")
+                trueSymbols[symbol] = s
             
         print(f"Zakończono pobieranie")
-            
+        
+        # zapisujemy poprawne symbole i kursy (w surowej postaci jako backup)
+        SaveDict(trueSymbols, 'TrueSymbols', 'Data')
+        SaveDict(finalData, 'finalData_backup', 'Data')
+        
         return pd.DataFrame(finalData)
     
     
