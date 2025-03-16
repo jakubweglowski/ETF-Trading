@@ -19,37 +19,34 @@ class DataLoader:
                 start: str,
                 end: str = now(),
                 period: str = '1D',
-                verbose: bool = False):
+                verbose: bool = False) -> pd.DataFrame:
         
-        print(f"[{now(False)}] Rozpoczynam pobieranie danych dla {len(symbols)} instrumentów.")
+        print(f"\tRozpoczynam pobieranie danych dla {len(symbols)} instrumentów.")
         for x in currencies:
             if x not in symbols: symbols.append(x)
         
-        finalData = {}
+        finalData = {} # tu zapisujemy kursy instrumentów
         
         beginning_time = time.time()
         n_items = len(symbols)
         for i, symbol in enumerate(symbols):
             
-            if symbol in currencies:
-                s = symbol+'=X'
-                if verbose: print(f"\tPobieram {symbol}")
-            else:
-                s = symbol
+            if verbose and symbol in currencies: print(f"\tPobieram {symbol}")
+            s = alterSymbol(symbol)
                 
             if verbose and (i % 100 == 0): 
                 print(f"\tPozostało {(1-i/n_items):.0%}.") 
                 if i > 0:
                     estimate_time_to_end(i, n_items, beginning_time)         
-            try:        
-                finalData[symbol] = getSymbol(symbol=s,
-                                              period=period,
-                                              start=start,
-                                              end=end)
+            try: 
+                s = reasonProperSymbol(s)       
+                finalData[symbol] = \
+                    getSymbol(symbol=s,
+                              period=period,
+                              start=start,
+                              end=end)
             except:
-                print(f"\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}.")
-
-            time.sleep(0.2)
+                print(f"\t[OSTRZEŻENIE] Nie udało się pobrać {s}.")
             
         print(f"Zakończono pobieranie")
             
@@ -86,6 +83,8 @@ class DataLoader:
             data = pd.concat([data.loc[:, new_symbols], remaining_data_after.loc[:, new_symbols]])
             
         data = data.sort_index()
+        data.index = data.index.strftime('%Y-%m-%d')
+        
         if append: SaveData(data, filename, filepath)
         
         data = data[(data.index >= start_date) & (data.index <= end_date)]

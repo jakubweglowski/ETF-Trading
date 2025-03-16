@@ -5,16 +5,81 @@ from datetime import datetime as dt
 from Functions.TimeFunctions import *
 from Functions.Items import *
 
+def reasonProperSymbol(symbol: str) -> str:
+    
+    # może być tak, że symbol jest poprawny od razu
+    try:
+        getSymbol(symbol=symbol, period='1D', start='2025-01-01', end='2025-02-01')
+        return symbol
+    except:
+        pass
+    
+    # usuwamy obecną końcówkę i szukamy poprawnej
+    dot_index = symbol.find('.')
+    s = symbol[:dot_index] # jeśli symbol = 'P500.DE', to s = 'P500'
+    
+    for ending in ['.L', '.MI', '.US', '.DE', '.SW', '.XC', '.PA', '.WA', '']:
+        try:
+            # dokładamy nową końcówkę i sprawdzamy, czy da się pobrać symbol
+            getSymbol(symbol=s+ending, period='1D', start='2025-01-01', end='2025-02-01')
+            valid_symbol = s+ending
+            print(f"\t[INFO] Znaleziono poprawny ticker dla {symbol}: {valid_symbol}.")
+            break
+        except:
+            # próbujemy z inną końcówką
+            continue
+                
+    try:
+        getSymbol(symbol=valid_symbol, period='1D', start='2025-01-01', end='2025-02-01')
+        return valid_symbol
+    except:
+        print(f"\t[BŁĄD] Nie udało się znaleźć poprawnej końcówki dla {symbol}.")
+        return symbol
+
+
+def alterSymbol(symbol: str) -> str:
+    """Funkcja zmieniająca symbol na taki, który może być użyty w serwisie Yahoo Finance.
+    Na przykład 'GBPUSD_59' zmienia na 'GBPUSD=X', 'VOW3.UK' na 'VOW3.L', 'AAPL.US' na 'AAPL'.
+
+    Args:
+        symbol (str): _description_
+
+    Returns:
+        str: _description_
+    """
+    
+    s = symbol.strip('_59')
+    if s in currencies: s = s+'=X'
+    elif s.find('.UK') != -1: s = s.replace('.UK', '.L')
+    elif s.find('.US') != -1: s = s.strip('.US')
+    else: pass
+
+    return s
+
+
 def getSymbol(symbol: str, 
               period: str, 
               start: str | None, 
               end: str | None,
-              just_now: bool = True) -> pd.Series:
+              just_now: bool = False) -> pd.Series:
+    """Funkcja pobierająca dane dla danego symbolu z serwisu Yahoo Finance.
+    W przypadku just_now=True pobierane są dane z ostatniej minuty.
+
+    Args:
+        symbol (str): _description_
+        period (str): _description_
+        start (str | None): _description_
+        end (str | None): _description_
+        just_now (bool, optional): _description_. Defaults to False.
+
+    Returns:
+        pd.Series: _description_
+    """
     
     ticker = yf.Ticker(symbol)
     
     if just_now:
-        y = ticker.history(period='1D', interval='1m')['Close']
+        y = ticker.history(period='1D', interval='1m', progress=False)['Close']
         return y[-1]
     
     else:
@@ -25,28 +90,44 @@ def getSymbol(symbol: str,
         return y
     
     
-def getCurrencies(info: dict, margin=0.005):
-        
-        # wgrywamy kursy walutowe w chwili obecnej
-        currency_prices = {'bid': {}, 'ask': {}}
-        
-        for currency_symbol in currencies:
-            response = getSymbol(symbol=currency_symbol+'=X', just_now=True)
-            try:
-                currency_bid = response['bid']
-                currency_ask = currency_bid + info[currency_symbol]['SpreadAbs']
-            except:
-                print(f"[BŁĄD] Błąd pobierania danych: nie można pobrać aktualnego kursu walutowego {currency_symbol}.")
-                currency_bid = 0.0
-                currency_ask = 0.0
+def getCurrencies(info: dict, margin=0.005) -> dict:
+    """Wgrywamy kursy walutowe w chwili obecnej.
+    Wartości bid i ask są obliczane na podstawie spreadu.
 
-            currency_prices['bid'][currency_symbol] = currency_bid*(1.0-margin)
-            currency_prices['ask'][currency_symbol] = currency_ask*(1.0+margin)
-        
-        return currency_prices
+    Args:
+        info (dict): _description_
+        margin (float, optional): _description_. Defaults to 0.005.
+
+    Returns:
+        dict: _description_
+    """
+    currency_prices = {'bid': {}, 'ask': {}}
+    
+    for currency_symbol in currencies:
+        response = getSymbol(symbol=currency_symbol+'=X', just_now=True)
+        try:
+            currency_bid = response['bid']
+            currency_ask = currency_bid + info[currency_symbol]['SpreadAbs']
+        except:
+            print(f"[BŁĄD] Błąd pobierania danych: nie można pobrać aktualnego kursu walutowego {currency_symbol}.")
+            currency_bid = 0.0
+            currency_ask = 0.0
+
+        currency_prices['bid'][currency_symbol] = currency_bid*(1.0-margin)
+        currency_prices['ask'][currency_symbol] = currency_ask*(1.0+margin)
+    
+    return currency_prices
 
 
-def summary_from_dict(statDict):
+def summary_from_dict(statDict: dict) -> str:
+    """Generuje opis statystyk portfela zapisanych w statDict.
+
+    Args:
+        statDict (dict): _description_
+
+    Returns:
+        str: _description_
+    """
     summary = f"Opis wygenerowany {statDict['CzasAnalizy']}.\n"
     try:
         summary += f"Czas otwarcia pozycji: {statDict['CzasOtwarcia']}.\n"
@@ -81,6 +162,16 @@ def summary_from_dict(statDict):
     return summary
 
 def decode_compare(compare: str):
+    """Funkcja dekodująca argument 'compare' postaci 'metoda_okno'.
+    Na przykład 'sma_20' oznacza średnią ruchomą prostą z oknem 20.
+    Wtedy funkcja zwraca krotkę ('sma', 20).
+
+    Args:
+        compare (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
     compare = compare.lower()
     assert compare.find('_') != -1, "Argument 'compare' musi mieć format 'metoda_okno'."
 
