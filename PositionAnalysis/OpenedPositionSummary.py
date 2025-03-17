@@ -28,9 +28,10 @@ class OpenedPositionSummary:
         for symbol in self.symbols:
             current_prices[symbol] = getSymbol(symbol, just_now=True)
             
+        K = self.statDict['KwotaInwestycji']
         MainSummary['Waluta bazowa'] = {symbol: self.statDict['WalutySymboli'][symbol] for symbol in self.symbols}
         MainSummary['Waga w portfelu [%]'] = self.portfolio
-        MainSummary['Wartość początkowa [PLN]'] = self.statDict['KwotaInwestycji'] * MainSummary['Waga w portfelu [%]']/100
+        MainSummary['Wartość początkowa [PLN]'] = K * MainSummary['Waga w portfelu [%]']/100
         
         MainSummary['Kurs początkowy'] = self.statDict['KursySymboliOtwarcia']
         MainSummary['Kurs obecny'] = current_prices
@@ -64,9 +65,12 @@ class OpenedPositionSummary:
         display(MainSummary.round(4))
         
         #############################################################################################
-        ReturnStats = \
-            pd.DataFrame({'Zwrot z portfela [%]': {'': (MainSummary['Stopa zwrotu [%]'] * MainSummary['Waga w portfelu [%]']/100).sum()},
-                          'Zwrot z portfela [PLN, %]': {'': (MainSummary['Stopa zwrotu [PLN, %]'] * MainSummary['Waga w portfelu [%]']/100.).sum()}
-                        }).round(4)
-        display(ReturnStats)
+        portfolioCI = self.statDict["PrzedziałUfnościZwrotuPortfela"]
+        ReturnStats = pd.DataFrame({'Zwrot z portfela [%]': {'': (MainSummary['Stopa zwrotu [%]'] * MainSummary['Waga w portfelu [%]']/100).sum()},
+                                    'Zwrot z portfela [PLN, %]': {'': (MainSummary['Stopa zwrotu [PLN, %]'] * MainSummary['Waga w portfelu [%]']/100.).sum()},
+                                    'Oczekiwany zwrot z portfela [PLN, %]': {'': self.statDict['OczekiwanyZwrotPortfela']},
+                                    f'Przedział ufności ({self.statDict["PoziomUfności"]}) zwrotu portfela [PLN, %]': f'[{portfolioCI["lowCI"]}, {portfolioCI["highCI"]}]'
+                                    })
+        ReturnStats['Zwrot nominalny [PLN]'] = K * ReturnStats[['Zwrot z portfela [PLN, %]']]/100.
+        display(ReturnStats.round(4))
         
