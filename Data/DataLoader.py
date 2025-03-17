@@ -78,25 +78,38 @@ class DataLoader:
                             verbose: bool = False):
         
         data = LoadData(filename, filepath)
-        data.index = pd.DatetimeIndex(data.index)
         symbols = list(data.columns)
         
-        old_start = data.index[0].strftime('%Y-%m-%d')
+        old_start = data.index[0]
         if start_date < old_start:
+            
             print(f"\tPobieramy brakujące dane od {start_date} do {old_start}...")
-            remaining_data_before = self.getInstrumentsData(symbols, start_date, shift_date(data.index[0].strftime("%Y-%m-%d"), days=-1), verbose=verbose)
-            new_symbols = [x for x in symbols if x in remaining_data_before.columns]
+            
+            temp_data = self.getInstrumentsData(symbols=symbols,
+                                                start=start_date,
+                                                end=shift_date(data.index[0], days=-1),
+                                                verbose=verbose)
+            new_symbols = [x for x in symbols if x in temp_data.columns]
+            
             print(f"\tZagubiliśmy {len(symbols)-len(new_symbols)} instrumentów.")
-            data = pd.concat([data.loc[:, new_symbols], remaining_data_before.loc[:, new_symbols]])
+            
+            data = pd.concat([data.loc[:, new_symbols], temp_data.loc[:, new_symbols]])
             symbols = list(data.columns)
             
-        old_end = data.index[-1].strftime('%Y-%m-%d')
+        old_end = data.index[-1]
         if old_end < end_date:
+            
             print(f"\tPobieramy brakujące dane od {old_end} do {end_date}...")
-            remaining_data_after = self.getInstrumentsData(symbols, shift_date(data.index[-1].strftime("%Y-%m-%d"), days=1), end_date, verbose=verbose)
-            new_symbols = [x for x in symbols if x in remaining_data_after.columns]
+            
+            temp_data = self.getInstrumentsData(symbols=symbols, 
+                                                start=shift_date(data.index[-1], days=1),
+                                                end=end_date,
+                                                verbose=verbose)
+            new_symbols = [x for x in symbols if x in temp_data.columns]
+            
             print(f"\tZagubiliśmy {len(symbols)-len(new_symbols)} instrumentów.")
-            data = pd.concat([data.loc[:, new_symbols], remaining_data_after.loc[:, new_symbols]])
+            
+            data = pd.concat([data.loc[:, new_symbols], temp_data.loc[:, new_symbols]])
             
         data.index = unify_time_index(data.index)
         data = data.sort_index()

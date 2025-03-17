@@ -79,6 +79,7 @@ class MarkowitzOptimization:
                                               risk_method=risk_method,
                                               model=model)
         self._analysis_performed()
+        return self.portfolio
             
     def getPortfolio(self):
         if self.analysis_performed:

@@ -33,14 +33,30 @@ def str_to_UNIX(date, full: bool = True) -> int:
 def shift_date(date: str, days: int) -> str:
     return (dt.strptime(date, "%Y-%m-%d") + tmd(days=days)).strftime("%Y-%m-%d")
 
-def recalculate_frequency(freq):
-    if freq[-1].lower() == 'd':
-        k = int(freq[:-1])
-    elif freq[-1].lower() == 'w':
-        k = int(freq[:-1])*5
-    elif freq[-1].lower() == 'm':
-        k = int(freq[:-1])*22
-    elif freq[-1].lower() == 'y':
-        k = int(freq[:-1])*252
+def recalculate_frequency(freq, full = False) -> int:
+    if not full:
+        if freq[-1].lower() == 'd':
+            k = int(freq[:-1])
+        elif freq[-1].lower() == 'w':
+            k = int(freq[:-1])*5
+        elif freq[-1].lower() == 'm':
+            k = int(freq[:-1])*22
+        elif freq[-1].lower() == 'y':
+            k = int(freq[:-1])*252
+    else:
+        if freq[-1].lower() == 'd':
+            k = int(freq[:-1])
+        elif freq[-1].lower() == 'w':
+            k = int(freq[:-1])*7
+        elif freq[-1].lower() == 'm':
+            k = int(freq[:-1])*30
+        elif freq[-1].lower() == 'y':
+            k = int(freq[:-1])*365
     return k
+
+def generate_start_end(end: str, freq: str, len_train: int = 2) -> tuple[str]:
+    k = recalculate_frequency(freq, full = True)
+    shift = (k+1)*len_train
+    start = shift_date(end, -shift)
+    return (start, end)
     

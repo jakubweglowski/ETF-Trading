@@ -1,4 +1,5 @@
 import pandas as pd
+from IPython.display import display
 from datetime import datetime as dt, timedelta as tmd
 
 from Functions.TimeFunctions import *
@@ -9,105 +10,63 @@ from Functions.Items import *
 class OpenedPositionSummary:
     
     def __init__(self,
-                 currentTrades: dict,
-                 info: dict,
-                 portfolio: dict | None = None, # portfel z wagami
-                 exchange_rates_open: dict | None = None):
+                 statDict: dict,
+                 info: dict):
         
+        self.statDict = statDict
+        self.portfolio = self.statDict['SkładPortfela']
+        self.symbols = self.portfolio.keys()
         self.info = {key: val
                      for key, val in info.items()
-                     if key in currentTrades.keys()
-                     or key in currencies}
-        
-        self.summary = None
-        self.exchange_rates_open = exchange_rates_open
-        
-        self.portfolio = portfolio
-        assert all([x in currentTrades for x in self.portfolio.keys()]), "W portfelu znajduje się instrument, na którym nie ma aktualnie otwartej pozycji."
-        self.currentTrades = {key: val
-                              for key, val in currentTrades.items() if key in self.portfolio.keys()}
-
-        
-    def get_currency(self, symbol: str, margin: float = 0.005):
-        
-        # wyszukujemy walutę instrumentu
-        for x in currencies:
-            if self.info[symbol]['Waluta'] == x[:3]:
-                currency_symbol = x
-                    
-        if self.exchange_rates_open is not None:
-            currency_open = self.exchange_rates_open['ask'][currency_symbol]
-        else:        
-            # wgrywamy kurs walutowy w chwili zakupu instrumentu
-            start = (dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S") + tmd(hours=-2)).strftime("%Y-%m-%d %H:%M:%S")
-            end = (dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S") + tmd(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
-            
-            self.connect(False)
-            response = getSymbol(symbol=currency_symbol,
-                             period='1h',
-                             start=start,
-                             end=end,
-                             client=self.client)
-            self.disconnect(False)
-            try:
-                currency_bid = XTB_to_pandas(response)
-            except:
-                print(f"[BŁĄD] Błąd pobierania danych z API: nie można pobrać aktualnego kursu walutowego.")
-                print(response)
-                currency_bid = pd.Series({0: pd.NA})
-                
-            currency_spread = self.info[currency_symbol]['SpreadProc']
-            currency_ask = currency_bid*(1+currency_spread)
-
-            opening_time = dt.strptime(self.currentTrades[symbol]['CzasOtwarcia'], "%Y-%m-%d %H:%M:%S")
-            opening_time = round_to_nearest_hour(opening_time).strftime("%Y-%m-%d %H")+':00:00'
-            currency_open = currency_ask.loc[opening_time]*(1.0+margin)
-        
-        # wgrywamy kurs walutowy w chwili obecnej       
-        currency_now = getCurrencies(info=self.info)[currency_symbol]['bid']
-                
-        return (currency_open, currency_now)
+                     if key in self.symbols or key in currencies}
         
     def getSummary(self):
-                    
-        for symbol in self.currentTrades.keys():
-                        
-            currency_open, currency_now = self.get_currency(symbol)
-            self.currentTrades[symbol]['CenaOtwarciaPLN'] = self.currentTrades[symbol]['CenaOtwarcia'] * currency_open
-            self.currentTrades[symbol]['CenaAktualnaPLN'] = self.currentTrades[symbol]['CenaAktualna'] * currency_now
         
-        self.currentTrades = pd.DataFrame(self.currentTrades)
+        MainSummary = pd.DataFrame()
         
-        self.currentTrades.loc['Zwrot [%]', :] = (self.currentTrades.loc['CenaAktualna', :]/self.currentTrades.loc['CenaOtwarcia', :] - 1)*100
-        self.currentTrades.loc['ZwrotPLN [%]', :] = (self.currentTrades.loc['CenaAktualnaPLN', :]/self.currentTrades.loc['CenaOtwarciaPLN', :] - 1)*100
-        self.currentTrades.loc['Zysk/strata PLN', :] = self.currentTrades.loc['WartoscPoczatkowaPLN', :] * self.currentTrades.loc['ZwrotPLN [%]', :] / 100
+        current_prices = {}
+        for symbol in self.symbols:
+            current_prices[symbol] = getSymbol(symbol, just_now=True)
+            
+        MainSummary['Waluta bazowa'] = {symbol: self.statDict['WalutySymboli'][symbol] for symbol in self.symbols}
+        MainSummary['Waga w portfelu [%]'] = self.portfolio
+        MainSummary['Wartość początkowa [PLN]'] = self.statDict['KwotaInwestycji'] * MainSummary['Waga w portfelu [%]']/100
         
-        self.currentTrades.loc['KursWalutowyOtwarcia'] = self.currentTrades.loc['CenaOtwarciaPLN']/self.currentTrades.loc['CenaOtwarcia']
-        self.currentTrades.loc['KursWalutowyAktualny'] = self.currentTrades.loc['CenaAktualnaPLN']/self.currentTrades.loc['CenaAktualna']
-        self.currentTrades.loc['ZwrotWalutowy [%]'] = (self.currentTrades.loc['KursWalutowyAktualny']/self.currentTrades.loc['KursWalutowyOtwarcia'] - 1)*100
-
-        self.currentTrades = self.currentTrades.loc[['CzasOtwarcia', 'WartoscPoczatkowaPLN',
-                                                      'CenaOtwarcia', 'CenaAktualna', 'Zwrot [%]',
-                                                     'KursWalutowyOtwarcia', 'KursWalutowyAktualny', 'ZwrotWalutowy [%]',
-                                                     'CenaOtwarciaPLN', 'CenaAktualnaPLN',
-                                                     'ZwrotPLN [%]','Zysk/strata PLN'], :]
-        self.currentTrades.loc['KursWalutowyOtwarcia'] = self.currentTrades.loc['CenaOtwarciaPLN']/self.currentTrades.loc['CenaOtwarcia']
-        self.currentTrades.loc['KursWalutowyAktualny'] = self.currentTrades.loc['CenaAktualnaPLN']/self.currentTrades.loc['CenaAktualna']
-        return self.currentTrades
-    
-    def getReturns(self):
-        return self.currentTrades.loc['ZwrotPLN [%]', :]
-    
-    def getProfitLoss(self):
-        return self.currentTrades.loc['Zysk/strata PLN', :]
-    
-    def getPCTReturn(self):
-        df = self.getReturns()
-        for symbol in df.index:
-            df.loc[symbol] *= self.portfolio[symbol]
-        return round(df.sum()/100, 2)
-    
-    def getPLNReturn(self):
-        df = self.getProfitLoss()
-        return round(df.sum(), 2)
+        MainSummary['Kurs początkowy'] = self.statDict['KursySymboliOtwarcia']
+        MainSummary['Kurs obecny'] = current_prices
+        MainSummary['Stopa zwrotu [%]'] = (MainSummary['Kurs obecny']/MainSummary['Kurs początkowy'] - 1)*100
+        
+        open_currencies = self.statDict['KursyWalutoweOtwarcia']['ask']
+        current_currencies = getCurrencies(self.info)['bid']
+        
+        MainSummary['Kurs początkowy [PLN]'] = MainSummary['Kurs początkowy'] * MainSummary['Waluta bazowa'].apply(lambda x: open_currencies[x+'PLN'])
+        MainSummary['Kurs obecny [PLN]'] = MainSummary['Kurs obecny'] * MainSummary['Waluta bazowa'].apply(lambda x: current_currencies[x+'PLN'])
+        MainSummary['Stopa zwrotu [PLN, %]'] = (MainSummary['Kurs obecny [PLN]']/MainSummary['Kurs początkowy [PLN]'] - 1)*100
+        
+        #############################################################################################  
+        k = recalculate_frequency(self.statDict['OkresInwestycji'], full=True)
+        opening_time = self.statDict['CzasOtwarciaPozycji']
+        opening_date = dt.strptime(opening_time, "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d")
+        TimeStats = pd.DataFrame({'Okres zawarcia pozycji': {'': f'{k} dni'},
+                              'Czas otwarcia pozycji': {'': opening_time},
+                              'Obecny czas': {'': now(False)},
+                              'Przewidywana data zamknięcia pozycji': shift_date(opening_date, k)
+                              })
+        display(TimeStats)
+        
+        #############################################################################################
+        CurrenciesSummary = pd.DataFrame({'Początkowy kurs walutowy (Ask)': self.statDict['KursyWalutoweOtwarcia']['ask'],
+                                          'Obecny kurs walutowy (Bid)': current_currencies})
+        CurrenciesSummary['Stopa zwrotu [%]'] = (CurrenciesSummary['Obecny kurs walutowy (Bid)']/CurrenciesSummary['Początkowy kurs walutowy (Ask)'] - 1)*100
+        display(CurrenciesSummary.round(4))
+        
+        #############################################################################################
+        display(MainSummary.round(4))
+        
+        #############################################################################################
+        ReturnStats = \
+            pd.DataFrame({'Zwrot z portfela [%]': {'': (MainSummary['Stopa zwrotu [%]'] * MainSummary['Waga w portfelu [%]']/100).sum()},
+                          'Zwrot z portfela [PLN, %]': {'': (MainSummary['Stopa zwrotu [PLN, %]'] * MainSummary['Waga w portfelu [%]']/100.).sum()}
+                        }).round(4)
+        display(ReturnStats)
         

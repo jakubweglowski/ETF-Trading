@@ -66,6 +66,7 @@ class PortfolioPerformance:
         statDict['MetodaEstymacjiRyzyka'] = self.risk_method
         statDict['PoziomUfności'] = 1-alphaCI
         statDict['CzasAnalizy'] = now(False)
+        statDict['Rodzaj'] = 'Wstępna analiza'
         
         return statDict
         
@@ -77,13 +78,17 @@ class PortfolioPerformance:
                    filepath: str | None = None):
         
         statDict = self.getStatDict()
+        
         summary = summary_from_dict(statDict)
         if verbose: print(summary)
+        
         if save_dict or save_text:
             assert filename is not None and filepath is not None, "[BŁĄD] Jeśli chcesz zapisać wynik analizy, musisz podać ścieżkę do pliku (argumenty 'filename' i 'filepath')."
+            print(f"[INFO] Zmieniam 'Rodzaj' z 'Wstępna analiza' na 'Rekomendacja' i zapisuję.")
+            statDict['Rodzaj'] = 'Rekomendacja'
             if save_dict:
-                statDict['Rodzaj'] = 'Rekomendacja'
                 SaveDict(statDict, filename, filepath)
             if save_text:
+                summary = summary_from_dict(statDict)
                 with open(f"{filepath}/{filename}.txt", 'w', encoding='utf-8') as f:
                     f.write(summary)

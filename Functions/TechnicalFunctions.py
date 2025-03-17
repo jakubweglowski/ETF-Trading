@@ -70,18 +70,18 @@ def alterSymbol(symbol: str) -> str:
 
 
 def getSymbol(symbol: str, 
-              period: str, 
-              start: str | None, 
-              end: str | None,
+              period: str | None = None, 
+              start: str | None = None, 
+              end: str | None = None,
               just_now: bool = False) -> pd.Series:
-    """Funkcja pobierająca dane dla danego symbolu z serwisu Yahoo Finance.
-    W przypadku just_now=True pobierane są dane z ostatniej minuty.
+    """Funkcja pobierająca dane z serwisu Yahoo Finance.
+    Możliwe jest pobranie danych z określonego okresu (start, end) albo danych z chwili obecnej.
 
     Args:
         symbol (str): _description_
-        period (str): _description_
-        start (str | None): _description_
-        end (str | None): _description_
+        period (str | None, optional): _description_. Defaults to None.
+        start (str | None, optional): _description_. Defaults to None.
+        end (str | None, optional): _description_. Defaults to None.
         just_now (bool, optional): _description_. Defaults to False.
 
     Returns:
@@ -91,11 +91,11 @@ def getSymbol(symbol: str,
     ticker = yf.Ticker(symbol)
     
     if just_now:
-        y = ticker.history(period='1D', interval='1m', progress=False)['Close']
+        y = ticker.history(period='1D', interval='1m')['Close']
         return y[-1]
     
     else:
-        y = ticker.history(start=start, end=end, interval=period)['Close']
+        y = ticker.history(start=start, end=shift_date(end, 1), interval=period)['Close']
         assert len(y) > 0, f"Brak danych dla {symbol} w okresie od {start} do {end}."
         y.index = y.index.strftime('%Y-%m-%d')
         y = y.rename(symbol)
@@ -119,9 +119,8 @@ def getCurrencies(info: dict, margin=0.005) -> dict:
     currency_prices = {'bid': {}, 'ask': {}}
     
     for currency_symbol in currencies:
-        response = getSymbol(symbol=currency_symbol+'=X', just_now=True)
         try:
-            currency_bid = response['bid']
+            currency_bid = getSymbol(symbol=currency_symbol+'=X', just_now=True)
             currency_ask = currency_bid + info[currency_symbol]['SpreadAbs']
         except:
             print(f"[BŁĄD] Błąd pobierania danych: nie można pobrać aktualnego kursu walutowego {currency_symbol}.")
@@ -160,31 +159,40 @@ def summary_from_dict(statDict: dict) -> str:
     Returns:
         str: _description_
     """
-    summary = f"Opis wygenerowany {statDict['CzasAnalizy']}.\n"
+    summary = f"Czas przeprowadzenia analizy: {statDict['CzasAnalizy']}.\n"
+    
+    try:
+        summary += f"Opisywany obiekt: {statDict['Rodzaj']}.\n"
+    except KeyError:
+        pass
+    
     try:
         summary += f"Czas otwarcia pozycji: {statDict['CzasOtwarcia']}.\n"
     except KeyError:
         pass
-    summary += f"Okres inwestycji: {statDict['OkresInwestycji']}.\n"
-    summary += f"Zastosowane kryterium wyboru: {statDict['Model']}.\n"
+    
+    summary += f"\nZastosowane kryterium wyboru: {statDict['Model']}.\n"
     summary += f"Metoda estymacji ryzyka: {statDict['MetodaEstymacjiRyzyka']}.\n"
     summary += f"Poziom ufności: {statDict['PoziomUfności']}.\n"
+    
+    summary += f"\nOkres inwestycji: {statDict['OkresInwestycji']}.\n"
     summary += f"Oczekiwany zwrot z portfela [%]: {statDict['OczekiwanyZwrotPortfela']}\n"
     summary += f"Oczekiwane ryzyko portfela [%]: {statDict['OczekiwaneRyzykoPortfela']}\n"      
-    summary += f"Przedział ufności dla stóp zwrotu [%]: "
+    summary += f"\tPrzedział ufności dla stóp zwrotu [%]: "
     for key, val in statDict['PrzedziałUfnościZwrotuPortfela'].items():
         if key == 'lowCI': summary += f"[{val}, "
         elif key == 'highCI': summary += f"{val}]\n"
-        
+        else: pass
     summary += f"Sharpe Ratio portfela: {statDict['SharpeRatio']}\n"
 
+        
     tempDict = dict(pd.DataFrame([pd.Series(statDict['SkładPortfela'], name='Waga w portfelu [%]'),
                 pd.Series(statDict['OczekiwaneZwroty'], name='Oczekiwana stopa zwrotu [%]'),
                 pd.Series(statDict['OczekiwaneRyzyka'], name='Oczekiwana stopa ryzyka [%]'),
                 pd.DataFrame(statDict['PrzedziałyUfnościZwrotów']).T.iloc[:, 0],
                 pd.DataFrame(statDict['PrzedziałyUfnościZwrotów']).T.iloc[:, 1]]))
         
-    summary += "Skład portfela:\n"
+    summary += "\nSkład portfela:\n"
     for key, val in tempDict.items():
         summary += f"\t{key}:\n"
         for key1, val1 in dict(val).items():
