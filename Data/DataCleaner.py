@@ -160,8 +160,9 @@ class DataCleaner:
         self.updateData(symbols, 'loc')
     
     def _remove_high_TER(self, threshold: float):
-        TER = pd.Series(LoadDict('InstrumentsTER'))
-        symbols = list(TER.iloc[(TER < threshold).values].index)
+        # TER = pd.Series(LoadDict('InstrumentsTER'))
+        # symbols = list(TER.iloc[(TER < threshold).values].index)
+        symbols = [key for key, val in self.info.items() if val['TER'] < threshold]
         for x in currencies:
             if x not in symbols: symbols.append(x)
         if self.verbose: print("[INFO] Usuwanie instrumentów o wysokich kosztach obsługi.")
