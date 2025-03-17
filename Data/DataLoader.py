@@ -27,36 +27,38 @@ class DataLoader:
             if x not in symbols: symbols.append(x)
         
         finalData = {} # tu zapisujemy kursy instrumentów
-        trueSymbols = {} # tu zapisujemy poprawne symbole
+        # trueSymbols = {} # tu zapisujemy poprawne symbole
         
         beginning_time = time.time()
         n_items = len(symbols)
         for i, symbol in enumerate(symbols):
             
             if verbose and symbol in currencies: print(f"\tPobieram {symbol}")
-            s = alterSymbol(symbol)
+            # s = alterSymbol(symbol)
                 
-            if verbose and (i % 100 == 0): 
+            if verbose and (i % 200 == 0): 
                 print(f"\tPozostało {(1-i/n_items):.0%}.") 
                 if i > 0:
                     estimate_time_to_end(i, n_items, beginning_time)         
 
-            s = reasonProperSymbol(s)
-            if s == '':
-                print(f"\t[OSTRZEŻENIE] Nie udało się pobrać {s}. Zasypiamy na {sleep} sekund...")
-                time.sleep(sleep)
-            else: 
-                finalData[symbol] = \
-                    getSymbol(symbol=s,
-                              period=period,
-                              start=start,
-                              end=end)
-                trueSymbols[symbol] = s
+            # s = reasonProperSymbol(s)
+            # if s == '':
+            #     print(f"\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}. Zasypiamy na {sleep} sekund... ", end='')
+            #     time.sleep(sleep)
+            #     print("wstajemy!")
+            # else:
+            s = symbol 
+            finalData[symbol] = \
+                getSymbol(symbol=s,
+                            period=period,
+                            start=start,
+                            end=end)
+            # trueSymbols[symbol] = s
             
         print(f"Zakończono pobieranie")
         
-        # zapisujemy poprawne symbole i kursy (w surowej postaci jako backup)
-        SaveDict(trueSymbols, 'TrueSymbols', 'Data')
+        # # zapisujemy poprawne symbole i kursy (w surowej postaci jako backup)
+        # SaveDict(trueSymbols, 'TrueSymbols', 'Data')
         SaveDict(finalData, 'finalData_backup', 'Data')
         
         return pd.DataFrame(finalData)
@@ -91,8 +93,9 @@ class DataLoader:
             print(f"\tZagubiliśmy {len(symbols)-len(new_symbols)} instrumentów.")
             data = pd.concat([data.loc[:, new_symbols], remaining_data_after.loc[:, new_symbols]])
             
+        
+        data.index = [x.strftime('%Y-%m-%d') for x in data.index]
         data = data.sort_index()
-        data.index = data.index.strftime('%Y-%m-%d')
         
         if append: SaveData(data, filename, filepath)
         

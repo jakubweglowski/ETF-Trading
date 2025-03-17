@@ -92,7 +92,7 @@ def getSymbol(symbol: str,
         y.index = y.index.strftime('%Y-%m-%d')
         y = y.rename(symbol)
         
-        time.sleep(2)
+        time.sleep(0.5)
         
         return y
     
