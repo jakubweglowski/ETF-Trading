@@ -6,7 +6,15 @@ from Functions.TimeFunctions import *
 from Functions.Items import *
 
 def reasonProperSymbol(symbol: str) -> str:
-    
+    """Funkcja sprawdzająca, czy symbol jest poprawny.
+    Jeśli nie, to próbuje znaleźć poprawny symbol.
+
+    Args:
+        symbol (str): symbol wejściowy
+
+    Returns:
+        str: poprawny symbol albo pusty string (jeśli nie udało się znaleźć poprawnego symbolu)
+    """
     # może być tak, że symbol jest poprawny od razu
     try:
         getSymbol(symbol=symbol, period='1D', start='2025-01-01', end='2025-02-01')
@@ -92,9 +100,9 @@ def getSymbol(symbol: str,
         y.index = y.index.strftime('%Y-%m-%d')
         y = y.rename(symbol)
         
-        time.sleep(0.5)
+        time.sleep(0.25)
         
-        return y
+        return round(y, 4)
     
     
 def getCurrencies(info: dict, margin=0.005) -> dict:
@@ -125,6 +133,23 @@ def getCurrencies(info: dict, margin=0.005) -> dict:
     
     return currency_prices
 
+def unify_time_index(old_index):
+    """Funkcja ujednolicająca indeks czasowy z mieszanki typów 'Timestamp' oraz 'str'
+    na typ 'str'.
+
+    Args:
+        old_index (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    new_index = []
+    for i, x in enumerate(old_index):
+        if not isinstance(x, str): # jeśli nie jest typu 'str', jest typu 'Timestamp'
+            new_index.append(x.strftime('%Y-%m-%d'))
+        else:
+            new_index.append(x)
+    return new_index
 
 def summary_from_dict(statDict: dict) -> str:
     """Generuje opis statystyk portfela zapisanych w statDict.

@@ -82,6 +82,7 @@ class PortfolioPerformance:
         if save_dict or save_text:
             assert filename is not None and filepath is not None, "[BŁĄD] Jeśli chcesz zapisać wynik analizy, musisz podać ścieżkę do pliku (argumenty 'filename' i 'filepath')."
             if save_dict:
+                statDict['Rodzaj'] = 'Rekomendacja'
                 SaveDict(statDict, filename, filepath)
             if save_text:
                 with open(f"{filepath}/{filename}.txt", 'w', encoding='utf-8') as f:

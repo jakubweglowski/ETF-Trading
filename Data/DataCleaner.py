@@ -43,6 +43,8 @@ class DataCleaner:
             for key, val in self.info.items() if key in self.data.columns})
         
         self.data = self.data.reindex(sorted(self.data.columns), axis=1)
+        self.data.index = pd.DatetimeIndex(self.data.index)
+        
         self.spread_df = self.spread_df.reindex(sorted(self.spread_df.columns), axis=1)
         
         weekdays = list(~pd.Series(self.data.index).apply(lambda x: x.weekday()).isin([5, 6]))
@@ -162,7 +164,10 @@ class DataCleaner:
     def _remove_high_TER(self, threshold: float):
         # TER = pd.Series(LoadDict('InstrumentsTER'))
         # symbols = list(TER.iloc[(TER < threshold).values].index)
-        symbols = [key for key, val in self.info.items() if val['TER'] < threshold]
+        symbols = []
+        for key, val in self.info.items():
+            if val['TER'] is None: continue
+            if val['TER'] < threshold: symbols.append(key)
         for x in currencies:
             if x not in symbols: symbols.append(x)
         if self.verbose: print("[INFO] Usuwanie instrumentów o wysokich kosztach obsługi.")

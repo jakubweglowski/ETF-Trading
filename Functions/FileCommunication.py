@@ -13,4 +13,4 @@ def SaveData(data: pd.DataFrame | pd.Series, filename, filepath: str = 'Data'):
     data.to_csv(f"{filepath}/"+f"{filename}.csv", sep=",", index=True, header=True)
     
 def LoadData(filename, filepath: str = 'Data'):
-    return pd.read_csv(f"{filepath}/"+f"{filename}.csv", sep=",", index_col='Date')
+    return pd.read_csv(f"{filepath}/"+f"{filename}.csv", sep=",", index_col=0)

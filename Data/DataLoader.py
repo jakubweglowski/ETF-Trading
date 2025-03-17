@@ -64,7 +64,7 @@ class DataLoader:
         
         # # zapisujemy poprawne symbole i kursy (w surowej postaci jako backup)
         # SaveDict(trueSymbols, 'TrueSymbols', 'Data')
-        SaveDict(finalData, 'finalData_backup', 'Data')
+        SaveDict(finalData, 'finalData_backup', 'Data/Backup')
         
         return pd.DataFrame(finalData)
     
@@ -77,7 +77,7 @@ class DataLoader:
                             append: bool = True,
                             verbose: bool = False):
         
-        data = LoadData(filename, filepath).copy()
+        data = LoadData(filename, filepath)
         data.index = pd.DatetimeIndex(data.index)
         symbols = list(data.columns)
         
@@ -98,13 +98,7 @@ class DataLoader:
             print(f"\tZagubiliśmy {len(symbols)-len(new_symbols)} instrumentów.")
             data = pd.concat([data.loc[:, new_symbols], remaining_data_after.loc[:, new_symbols]])
             
-        new_index = []
-        for i, x in enumerate(data.index):
-            if not isinstance(x, str): # jeśli nie jest typu 'str', jest typu 'Timestamp'
-                new_index.append(x.strftime('%Y-%m-%d'))
-            else:
-                new_index.append(x)
-                
+        data.index = unify_time_index(data.index)
         data = data.sort_index()
         
         if append: SaveData(data, filename, filepath)
