@@ -36,7 +36,7 @@ class DataLoader:
             if verbose and symbol in currencies: print(f"\tPobieram {symbol}")
             # s = alterSymbol(symbol)
                 
-            if verbose and (i % 200 == 0): 
+            if verbose and (i % 300 == 0): 
                 print(f"\tPozostało {(1-i/n_items):.0%}.") 
                 if i > 0:
                     estimate_time_to_end(i, n_items, beginning_time)         
@@ -47,13 +47,18 @@ class DataLoader:
             #     time.sleep(sleep)
             #     print("wstajemy!")
             # else:
-            s = symbol 
-            finalData[symbol] = \
-                getSymbol(symbol=s,
-                            period=period,
-                            start=start,
-                            end=end)
-            # trueSymbols[symbol] = s
+            s = (symbol if symbol not in currencies else symbol + '=X')
+            try:
+                finalData[symbol] = \
+                    getSymbol(symbol=s,
+                                period=period,
+                                start=start,
+                                end=end)
+                # trueSymbols[symbol] = s 
+            except:
+                print(f"\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}. Zasypiamy na {sleep} sekund... ", end='')
+                time.sleep(sleep)
+                print("wstajemy!")
             
         print(f"Zakończono pobieranie")
         
@@ -93,8 +98,13 @@ class DataLoader:
             print(f"\tZagubiliśmy {len(symbols)-len(new_symbols)} instrumentów.")
             data = pd.concat([data.loc[:, new_symbols], remaining_data_after.loc[:, new_symbols]])
             
-        
-        data.index = [x.strftime('%Y-%m-%d') for x in data.index]
+        new_index = []
+        for i, x in enumerate(data.index):
+            if not isinstance(x, str): # jeśli nie jest typu 'str', jest typu 'Timestamp'
+                new_index.append(x.strftime('%Y-%m-%d'))
+            else:
+                new_index.append(x)
+                
         data = data.sort_index()
         
         if append: SaveData(data, filename, filepath)
@@ -103,7 +113,7 @@ class DataLoader:
                 
         return data    
     
-    def loadInstrumentsInfo(self, filename: str = 'InstrumentsInfo', filepath: str = 'Data'):
+    def loadInstrumentsInfo(self, filename: str = 'AllInfo', filepath: str = 'Data'):
         return LoadDict(filename, filepath)
             
     
