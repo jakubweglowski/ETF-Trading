@@ -3,6 +3,7 @@ import yfinance as yf
 from datetime import datetime as dt
 
 from Functions.TimeFunctions import *
+from Functions.StatisticalFunctions import *
 from Functions.Items import *
 
 def reasonProperSymbol(symbol: str) -> str:
@@ -69,12 +70,8 @@ def alterSymbol(symbol: str) -> str:
     return s
 
 
-def getSymbol(symbol: str, 
-              period: str | None = None, 
-              start: str | None = None, 
-              end: str | None = None,
-              just_now: bool = False) -> pd.Series:
-    """Funkcja pobierająca dane z serwisu Yahoo Finance.
+class getSymbol:
+    """Klasa pobierająca dane z serwisu Yahoo Finance.
     Możliwe jest pobranie danych z określonego okresu (start, end) albo danych z chwili obecnej.
 
     Args:
@@ -88,21 +85,34 @@ def getSymbol(symbol: str,
         pd.Series: _description_
     """
     
-    ticker = yf.Ticker(symbol)
+    def __init__(self):
+        pass
     
-    if just_now:
-        y = ticker.history(period='1D', interval='1m')['Close']
-        return y[-1]
-    
-    else:
-        y = ticker.history(start=start, end=shift_date(end, 1), interval=period)['Close']
-        assert len(y) > 0, f"Brak danych dla {symbol} w okresie od {start} do {end}."
-        y.index = y.index.strftime('%Y-%m-%d')
-        y = y.rename(symbol)
+    def __call__(self,
+                 symbol: str, 
+                 period: str | None = None, 
+                 start: str | None = None, 
+                 end: str | None = None,
+                 just_now: bool = False) -> pd.Series:
         
-        time.sleep(0.25)
+        ticker = yf.Ticker(symbol)
         
-        return round(y, 4)
+        if just_now:
+            y = ticker.history(period='1d', interval='5m')['Close']
+            if len(y) > 0:
+                return y[-1]
+            else:
+                return np.NaN
+            
+        else:
+            y = ticker.history(start=start, end=shift_date(end, 1), interval=period)['Close']
+            assert len(y) > 0, f"Brak danych dla {symbol} w okresie od {start} do {end}."
+            y.index = unify_time_index(y.index)
+            y = y.rename(symbol)
+            
+            time.sleep(0.25)
+            
+            return round(y, 4)
     
     
 def getCurrencies(info: dict, margin=0.005) -> dict:
@@ -120,7 +130,7 @@ def getCurrencies(info: dict, margin=0.005) -> dict:
     
     for currency_symbol in currencies:
         try:
-            currency_bid = getSymbol(symbol=currency_symbol+'=X', just_now=True)
+            currency_bid = getSymbol()(symbol=currency_symbol+'=X', just_now=True)
             currency_ask = currency_bid + info[currency_symbol]['SpreadAbs']
         except:
             print(f"[BŁĄD] Błąd pobierania danych: nie można pobrać aktualnego kursu walutowego {currency_symbol}.")
@@ -222,4 +232,70 @@ def decode_compare(compare: str):
     window = recalculate_frequency(window)
     
     return method, window
+
+
+def generateMainSummary(K, 
+                        portfolio,
+                        symbols,
+                        symbol_currencies,
+                        opening_symbol_prices,
+                        opening_currency_prices,
+                        current_currency_prices):
+    MainSummary = pd.DataFrame()
+        
+    current_prices = {}
+    for symbol in symbols:
+        current_prices[symbol] = getSymbol()(symbol, just_now=True)
+        
+    MainSummary['Waluta bazowa'] = {symbol: symbol_currencies[symbol] for symbol in symbols}
+    MainSummary['Waga w portfelu [%]'] = portfolio
+    MainSummary['Wartość początkowa [PLN]'] = K * MainSummary['Waga w portfelu [%]']/100
+    
+    MainSummary['Kurs początkowy'] = opening_symbol_prices
+    MainSummary['Kurs obecny'] = current_prices
+    MainSummary['Stopa zwrotu [%]'] = (MainSummary['Kurs obecny']/MainSummary['Kurs początkowy'] - 1)*100
+    
+    # open_currencies = opening_currency_prices['ask']
+    # current_currencies = getCurrencies(info)['bid']
+    
+    MainSummary['Kurs początkowy [PLN]'] = MainSummary['Kurs początkowy'] * MainSummary['Waluta bazowa'].apply(lambda x: opening_currency_prices[x+'PLN'])
+    MainSummary['Kurs obecny [PLN]'] = MainSummary['Kurs obecny'] * MainSummary['Waluta bazowa'].apply(lambda x: current_currency_prices[x+'PLN'])
+    MainSummary['Stopa zwrotu [PLN, %]'] = (MainSummary['Kurs obecny [PLN]']/MainSummary['Kurs początkowy [PLN]'] - 1)*100
+
+    return MainSummary
+
+def generateTimeStats(investment_period: str, opening_time: str) -> pd.DataFrame:
+    k = recalculate_frequency(investment_period, full=True)
+    
+    opening_time_dt = dt.strptime(opening_time, "%Y-%m-%d %H:%M:%S")
+    now_dt = dt.strptime(now(False), "%Y-%m-%d %H:%M:%S")
+    time_passed = now_dt - opening_time_dt
+    time_passed_str = f'{time_passed.days} dni {time_passed.seconds//3600} godzin'
+    
+    closing_date = shift_date(opening_time_dt.strftime("%Y-%m-%d"), k)
+    TimeStats = pd.DataFrame({'Okres zawarcia pozycji': {'': f'{k} dni'},
+                            'Czas otwarcia pozycji': {'': opening_time},
+                            'Obecny czas': {'': now(False)},
+                            'Czas od otwarcia': {'': time_passed_str},
+                            'Przewidywana data zamknięcia pozycji': {'': closing_date}
+                            })
+    return TimeStats
+
+def generateCurrenciesSummary(opening_prices, info):
+    current_prices = getCurrencies(info)['bid']    
+    CurrenciesSummary = pd.DataFrame({'Początkowy kurs walutowy (Ask)': opening_prices['ask'],
+                                      'Obecny kurs walutowy (Bid)': current_prices})
+    CurrenciesSummary['Stopa zwrotu [%]'] = (CurrenciesSummary['Obecny kurs walutowy (Bid)']/CurrenciesSummary['Początkowy kurs walutowy (Ask)'] - 1)*100
+    CurrenciesSummary = CurrenciesSummary.round(4)
+    return CurrenciesSummary
+
+def generateReturnStats(K, portfolioExpectedReturn, portfolioReturnCI, levelCI, returns, returnsPLN, weights):
+    ReturnStats = pd.DataFrame({'Zwrot z portfela [%]': {'': (returns * weights/100).sum()},
+                                'Zwrot z portfela [PLN, %]': {'': (returnsPLN * weights/100.).sum()},
+                                'Oczekiwany zwrot z portfela [PLN, %]': {'': portfolioExpectedReturn},
+                                f'Przedział ufności ({levelCI}) zwrotu portfela [PLN, %]': f'[{portfolioReturnCI["lowCI"]}, {portfolioReturnCI["highCI"]}]'
+                                })
+    ReturnStats['Zwrot nominalny [PLN]'] = K * ReturnStats[['Zwrot z portfela [PLN, %]']]/100.
+    ReturnStats = ReturnStats.round(4)
+    return ReturnStats
                 

@@ -1,6 +1,7 @@
 # Obliczamy zwrot w okresie 'freq'
 import numpy as np
 import pandas as pd
+from scipy.stats import pearsonr
 
 from sklearn.covariance import OAS, EmpiricalCovariance, LedoitWolf, ShrunkCovariance
 from qpsolvers import solve_qp
@@ -18,6 +19,20 @@ def getMeanCovariance(df: pd.DataFrame) -> tuple:
 def getExpectedReturns(data):
     mu = data.mean() # expected returns
     return mu.dropna()
+
+def getCValue(y: pd.Series):
+    n = len(y)
+    c = np.array(range(1, n+1))
+    corr, p = pearsonr(c, np.array(y.values))
+    if p > 0.05: corr = 0.0 # korelacja jest pozorna
+    return corr
+
+def getRSI(y: pd.Series):
+    U = y[y>0].sum()
+    D = y[y<0].sum()
+    RS = -U/D
+    RSI = 100-100/(1+RS)
+    return RSI
 
 def getReturnRates(bidPrice, askPrice, k):
     assert isinstance(k, int), "[BŁĄD] Argument 'k' musi być typu 'int'."
@@ -49,6 +64,9 @@ def getQuantiles(y: pd.Series, q: float = 0.05, one_sided: bool = False, type_: 
         
         if type_.lower() == 'minmax': return (ymiddle.min(), ymiddle.max())
         else: return ymiddle
+
+def SMA(y: pd.Series):
+    return y.mean()
 
 def EMA(y: pd.Series, alpha: float):
     weights = np.array([(1-alpha)**(len(y)-i+1) for i in range(len(y))])

@@ -1,7 +1,6 @@
 import pandas as pd
-from datetime import datetime as dt, timedelta as tmd
 import time
-import yfinance as yf
+from tqdm.notebook import tqdm
 
 from Functions.FileCommunication import *
 from Functions.TimeFunctions import *
@@ -22,24 +21,24 @@ class DataLoader:
                 verbose: bool = False,
                 sleep: int = 10) -> pd.DataFrame:
         
-        print(f"\tRozpoczynam pobieranie danych dla {len(symbols)} instrumentów.")
+        # print(f"\tRozpoczynam pobieranie danych dla {len(symbols)} instrumentów.")
         for x in currencies:
             if x not in symbols: symbols.append(x)
         
         finalData = {} # tu zapisujemy kursy instrumentów
         # trueSymbols = {} # tu zapisujemy poprawne symbole
         
-        beginning_time = time.time()
-        n_items = len(symbols)
-        for i, symbol in enumerate(symbols):
+        # beginning_time = time.time()
+        # n_items = len(symbols)
+        for symbol in tqdm(symbols, desc='\tStan pobierania', mininterval=2.):
             
             if verbose and symbol in currencies: print(f"\tPobieram {symbol}")
             # s = alterSymbol(symbol)
                 
-            if verbose and (i % 300 == 0): 
-                print(f"\tPozostało {(1-i/n_items):.0%}.") 
-                if i > 0:
-                    estimate_time_to_end(i, n_items, beginning_time)         
+            # if verbose and (i % 300 == 0): 
+            #     print(f"\tPozostało {(1-i/n_items):.0%}.") 
+            #     if i > 0:
+            #         estimate_time_to_end(i, n_items, beginning_time)         
 
             # s = reasonProperSymbol(s)
             # if s == '':
@@ -50,7 +49,7 @@ class DataLoader:
             s = (symbol if symbol not in currencies else symbol + '=X')
             try:
                 finalData[symbol] = \
-                    getSymbol(symbol=s,
+                    getSymbol()(symbol=s,
                                 period=period,
                                 start=start,
                                 end=end)

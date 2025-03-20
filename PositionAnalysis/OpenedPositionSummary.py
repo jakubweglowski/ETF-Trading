@@ -1,6 +1,6 @@
 import pandas as pd
 from IPython.display import display
-from datetime import datetime as dt, timedelta as tmd
+from datetime import datetime as dt
 
 from Functions.TimeFunctions import *
 from Functions.TechnicalFunctions import *
@@ -26,7 +26,7 @@ class OpenedPositionSummary:
         
         current_prices = {}
         for symbol in self.symbols:
-            current_prices[symbol] = getSymbol(symbol, just_now=True)
+            current_prices[symbol] = getSymbol()(symbol, just_now=True)
             
         K = self.statDict['KwotaInwestycji']
         MainSummary['Waluta bazowa'] = {symbol: self.statDict['WalutySymboli'][symbol] for symbol in self.symbols}

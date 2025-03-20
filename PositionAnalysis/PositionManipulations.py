@@ -1,12 +1,11 @@
-from datetime import datetime as dt, timedelta as tmd
+from datetime import datetime as dt
 import pandas as pd
+from IPython.display import display
 
-from PortfolioAnalysis.PortfolioLoader import PortfolioLoader
-from PositionAnalysis.OpenedPositionSummary import OpenedPositionSummary
 from Functions.TechnicalFunctions import *
 from Functions.FileCommunication import *
 from Functions.TimeFunctions import now
-from Functions.Items import period_dict, currencies
+from Functions.Items import currencies
 
 class PositionManipulator:
     """Klasa ładuje portfel (otwarty bądź dopiero rekomendację) zapisany w pliku
@@ -37,7 +36,7 @@ class PositionManipulator:
         
         open_prices = {}
         for symbol in self.symbols:
-            open_prices[symbol] = getSymbol(symbol, just_now=True) + self.info[symbol]['SpreadAbs']
+            open_prices[symbol] = getSymbol()(symbol, just_now=True) + self.info[symbol]['SpreadAbs']
             
         self.statDict['KursySymboliOtwarcia'] = open_prices
         self.statDict['KursyWalutoweOtwarcia'] = currencies
@@ -57,5 +56,76 @@ class PositionManipulator:
     # tylko z jakiegoś zapisanego pliku zawierającego dane o obecnie otwartych pozycjach    
     def AnalyzePosition(self):
         return OpenedPositionSummary(statDict = self.statDict, info = self.info)
+        
+        
+################################################################################################
+class OpenedPositionSummary:
+    
+    def __init__(self,
+                 statDict: dict,
+                 info: dict):
+        
+        self.statDict = statDict
+        self.portfolio = self.statDict['SkładPortfela']
+        self.symbols = self.portfolio.keys()
+        self.info = {key: val
+                     for key, val in info.items()
+                     if key in self.symbols or key in currencies}
+        
+    def getSummary(self):
+        
+        K = self.statDict['KwotaInwestycji']
+        
+        CurrenciesSummary = generateCurrenciesSummary(self.statDict['KursyWalutoweOtwarcia'], self.info)
+        
+        MainSummary = generateMainSummary(K,
+                                          self.portfolio,
+                                          self.symbols,
+                                          self.statDict['WalutySymboli'],
+                                          self.statDict['KursySymboliOtwarcia'],
+                                          CurrenciesSummary['Początkowy kurs walutowy (Ask)'],
+                                          CurrenciesSummary['Obecny kurs walutowy (Bid)'])
+        
+        # MainSummary = pd.DataFrame()
+        
+        # current_prices = {}
+        # for symbol in self.symbols:
+        #     current_prices[symbol] = getSymbol()(symbol, just_now=True)
+            
+        # K = self.statDict['KwotaInwestycji']
+        # MainSummary['Waluta bazowa'] = {symbol: self.statDict['WalutySymboli'][symbol] for symbol in self.symbols}
+        # MainSummary['Waga w portfelu [%]'] = self.portfolio
+        # MainSummary['Wartość początkowa [PLN]'] = K * MainSummary['Waga w portfelu [%]']/100
+        
+        # MainSummary['Kurs początkowy'] = self.statDict['KursySymboliOtwarcia']
+        # MainSummary['Kurs obecny'] = current_prices
+        # MainSummary['Stopa zwrotu [%]'] = (MainSummary['Kurs obecny']/MainSummary['Kurs początkowy'] - 1)*100
+        
+        # open_currencies = self.statDict['KursyWalutoweOtwarcia']['ask']
+        # current_currencies = getCurrencies(self.info)['bid']
+        
+        # MainSummary['Kurs początkowy [PLN]'] = MainSummary['Kurs początkowy'] * MainSummary['Waluta bazowa'].apply(lambda x: open_currencies[x+'PLN'])
+        # MainSummary['Kurs obecny [PLN]'] = MainSummary['Kurs obecny'] * MainSummary['Waluta bazowa'].apply(lambda x: current_currencies[x+'PLN'])
+        # MainSummary['Stopa zwrotu [PLN, %]'] = (MainSummary['Kurs obecny [PLN]']/MainSummary['Kurs początkowy [PLN]'] - 1)*100
+        
+        #############################################################################################          
+        TimeStats = generateTimeStats(self.statDict['OkresInwestycji'], self.statDict['CzasOtwarciaPozycji'])
+        display(TimeStats)
+        
+        #############################################################################################
+        display(CurrenciesSummary)
+        
+        #############################################################################################
+        display(MainSummary.round(4))
+        
+        #############################################################################################
+        ReturnStats = generateReturnStats(K=K, 
+                                          portfolioExpectedReturn=self.statDict['OczekiwanyZwrotPortfela'], 
+                                          portfolioReturnCI=self.statDict["PrzedziałUfnościZwrotuPortfela"], 
+                                          levelCI=self.statDict["PoziomUfności"], 
+                                          returns=MainSummary['Stopa zwrotu [%]'], 
+                                          returnsPLN=MainSummary['Stopa zwrotu [PLN, %]'], 
+                                          weights=MainSummary['Waga w portfelu [%]'])
+        display(ReturnStats)
         
         
