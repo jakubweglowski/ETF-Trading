@@ -78,45 +78,33 @@ class OpenedPositionSummary:
         
         CurrenciesSummary = generateCurrenciesSummary(self.statDict['KursyWalutoweOtwarcia'], self.info)
         
-        MainSummary = generateMainSummary(K,
-                                          self.portfolio,
-                                          self.symbols,
-                                          self.statDict['WalutySymboli'],
-                                          self.statDict['KursySymboliOtwarcia'],
-                                          CurrenciesSummary['Początkowy kurs walutowy (Ask)'],
-                                          CurrenciesSummary['Obecny kurs walutowy (Bid)'])
+        MainSummary = generateMainSummary(K=K,
+                                          portfolio=self.portfolio,
+                                          symbols=self.symbols,
+                                          symbol_currencies=self.statDict['WalutySymboli'],
+                                          opening_symbol_prices=self.statDict['KursySymboliOtwarcia'],
+                                          opening_currency_prices=CurrenciesSummary['Początkowy kurs walutowy (Ask)'],
+                                          current_currency_prices=CurrenciesSummary['Obecny kurs walutowy (Bid)'])
         
-        # MainSummary = pd.DataFrame()
+        TimeStats = generateTimeStats(self.statDict['OkresInwestycji'], self.statDict['CzasOtwarciaPozycji'])
+
+        ReturnStats = generateReturnStats(K=K, 
+                                          portfolioExpectedReturn=self.statDict['OczekiwanyZwrotPortfela'], 
+                                          portfolioReturnCI=self.statDict["PrzedziałUfnościZwrotuPortfela"], 
+                                          levelCI=self.statDict["PoziomUfności"], 
+                                          returns=MainSummary['Stopa zwrotu [%]'], 
+                                          returnsPLN=MainSummary['Stopa zwrotu [PLN, %]'], 
+                                          weights=MainSummary['Waga w portfelu [%]'])
         
-        # current_prices = {}
-        # for symbol in self.symbols:
-        #     current_prices[symbol] = getSymbol()(symbol, just_now=True)
-            
-        # K = self.statDict['KwotaInwestycji']
-        # MainSummary['Waluta bazowa'] = {symbol: self.statDict['WalutySymboli'][symbol] for symbol in self.symbols}
-        # MainSummary['Waga w portfelu [%]'] = self.portfolio
-        # MainSummary['Wartość początkowa [PLN]'] = K * MainSummary['Waga w portfelu [%]']/100
-        
-        # MainSummary['Kurs początkowy'] = self.statDict['KursySymboliOtwarcia']
-        # MainSummary['Kurs obecny'] = current_prices
-        # MainSummary['Stopa zwrotu [%]'] = (MainSummary['Kurs obecny']/MainSummary['Kurs początkowy'] - 1)*100
-        
-        # open_currencies = self.statDict['KursyWalutoweOtwarcia']['ask']
-        # current_currencies = getCurrencies(self.info)['bid']
-        
-        # MainSummary['Kurs początkowy [PLN]'] = MainSummary['Kurs początkowy'] * MainSummary['Waluta bazowa'].apply(lambda x: open_currencies[x+'PLN'])
-        # MainSummary['Kurs obecny [PLN]'] = MainSummary['Kurs obecny'] * MainSummary['Waluta bazowa'].apply(lambda x: current_currencies[x+'PLN'])
-        # MainSummary['Stopa zwrotu [PLN, %]'] = (MainSummary['Kurs obecny [PLN]']/MainSummary['Kurs początkowy [PLN]'] - 1)*100
         
         #############################################################################################          
-        TimeStats = generateTimeStats(self.statDict['OkresInwestycji'], self.statDict['CzasOtwarciaPozycji'])
         display(TimeStats)
         
         #############################################################################################
         display(CurrenciesSummary)
         
         #############################################################################################
-        display(MainSummary.round(4))
+        display(MainSummary)
         
         #############################################################################################
         ReturnStats = generateReturnStats(K=K, 

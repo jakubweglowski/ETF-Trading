@@ -262,6 +262,7 @@ def generateMainSummary(K,
     MainSummary['Kurs obecny [PLN]'] = MainSummary['Kurs obecny'] * MainSummary['Waluta bazowa'].apply(lambda x: current_currency_prices[x+'PLN'])
     MainSummary['Stopa zwrotu [PLN, %]'] = (MainSummary['Kurs obecny [PLN]']/MainSummary['Kurs początkowy [PLN]'] - 1)*100
 
+    MainSummary = MainSummary.round(4)
     return MainSummary
 
 def generateTimeStats(investment_period: str, opening_time: str) -> pd.DataFrame:
