@@ -5,7 +5,6 @@ from tqdm.notebook import tqdm
 from Functions.FileCommunication import *
 from Functions.TimeFunctions import *
 from Functions.TechnicalFunctions import *
-from PositionAnalysis.OpenedPositionSummary import *
 from Functions.Items import *
 
 class DataLoader:
@@ -48,11 +47,7 @@ class DataLoader:
             # else:
             s = (symbol if symbol not in currencies else symbol + '=X')
             try:
-                finalData[symbol] = \
-                    getSymbol()(symbol=s,
-                                period=period,
-                                start=start,
-                                end=end)
+                finalData[symbol] = getSymbol(symbol=s).daterange(start=start, end=end, period=period)
                 # trueSymbols[symbol] = s 
             except:
                 print(f"\t[OSTRZEŻENIE] Nie udało się pobrać {symbol}. Zasypiamy na {sleep} sekund... ", end='')

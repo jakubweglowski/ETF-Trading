@@ -85,8 +85,12 @@ class getSymbol:
         pd.Series: _description_
     """
     
-    def __init__(self):
-        pass
+    def __init__(self, symbol: str | None = None):
+        
+        self.symbol = symbol
+        
+        if symbol is not None:
+            self.ticker = yf.Ticker(symbol)
     
     def __call__(self,
                  symbol: str, 
@@ -114,6 +118,30 @@ class getSymbol:
             
             return round(y, 4)
     
+    def now(self):
+        y = self.ticker.history(period='1d', interval='1m')['Close']
+        return y[-1]
+        
+    def today(self):
+        y = self.ticker.history(period='1d', interval='1m')['Close']
+        return (y[0], y[-1])
+    
+    def month(self, how_many: int = 1):
+        y = self.daterange(start=shift_date(now(), -how_many*30), end=now(), period='1d')
+        return (y[0], y[-1])
+    
+    def daterange(self, start: str, end: str, period: str):
+        y = self.ticker.history(start=start, end=shift_date(end, 1), interval=period)['Close']
+        
+        assert len(y) > 0, f"Brak danych dla {self.symbol} w okresie od {start} do {end}."
+        
+        y.index = unify_time_index(y.index)
+        y = round(y.rename(self.symbol), 4)
+        
+        time.sleep(0.5)
+        
+        return y
+    
     
 def getCurrencies(info: dict, margin=0.005) -> dict:
     """Wgrywamy kursy walutowe w chwili obecnej.
@@ -130,7 +158,7 @@ def getCurrencies(info: dict, margin=0.005) -> dict:
     
     for currency_symbol in currencies:
         try:
-            currency_bid = getSymbol()(symbol=currency_symbol+'=X', just_now=True)
+            currency_bid = getSymbol(symbol=currency_symbol+'=X').now()
             currency_ask = currency_bid + info[currency_symbol]['SpreadAbs']
         except:
             print(f"[BŁĄD] Błąd pobierania danych: nie można pobrać aktualnego kursu walutowego {currency_symbol}.")
@@ -241,11 +269,12 @@ def generateMainSummary(K,
                         opening_symbol_prices,
                         opening_currency_prices,
                         current_currency_prices):
+    
     MainSummary = pd.DataFrame()
         
     current_prices = {}
     for symbol in symbols:
-        current_prices[symbol] = getSymbol()(symbol, just_now=True)
+        current_prices[symbol] = getSymbol(symbol).now()
         
     MainSummary['Waluta bazowa'] = {symbol: symbol_currencies[symbol] for symbol in symbols}
     MainSummary['Waga w portfelu [%]'] = portfolio

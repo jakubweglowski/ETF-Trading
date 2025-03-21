@@ -12,6 +12,7 @@ class PortfolioLoader:
     def __init__(self,
                  filename: str,
                  filepath: str = 'Positions'):
+        
         self.statDict = LoadDict(filename, filepath)
         
         self.portfolio = self.statDict['SkładPortfela']
