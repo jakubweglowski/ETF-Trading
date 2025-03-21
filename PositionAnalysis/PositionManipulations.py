@@ -36,7 +36,7 @@ class PositionManipulator:
         
         open_prices = {}
         for symbol in self.symbols:
-            open_prices[symbol] = getSymbol()(symbol, just_now=True) + self.info[symbol]['SpreadAbs']
+            open_prices[symbol] = getSymbol(symbol).now() + self.info[symbol]['SpreadAbs']
             
         self.statDict['KursySymboliOtwarcia'] = open_prices
         self.statDict['KursyWalutoweOtwarcia'] = currencies
@@ -102,6 +102,27 @@ class OpenedPositionSummary:
         
         #############################################################################################
         display(CurrenciesSummary)
+        
+        #############################################################################################
+        CurrentTrend = {}
+        
+        for symbol in self.portfolio.keys():
+            CurrentTrend[symbol] = {}
+            
+            y0, y1 = getSymbol(symbol).days()
+            CurrentTrend[symbol]['Zmiana dzienna [%]'] = (y1/y0 - 1)*100.
+            
+            y0, y1 = getSymbol(symbol).days(7)
+            CurrentTrend[symbol]['Zmiana tygodniowa [%]'] = (y1/y0 - 1)*100.
+
+            y0, y1 = getSymbol(symbol).months(1)
+            CurrentTrend[symbol]['Zmiana miesięczna [%]'] = (y1/y0 - 1)*100.
+        
+            y0, y1 = getSymbol(symbol).days(7)
+            CurrentTrend[symbol]['Zmiana roczna [%]'] = (y1/y0 - 1)*100.
+        
+        CurrentTrend = pd.DataFrame(CurrentTrend).round(4).T
+        display(CurrentTrend)
         
         #############################################################################################
         display(MainSummary)

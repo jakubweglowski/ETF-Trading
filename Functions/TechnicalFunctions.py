@@ -122,11 +122,11 @@ class getSymbol:
         y = self.ticker.history(period='1d', interval='1m')['Close']
         return y[-1]
         
-    def today(self):
-        y = self.ticker.history(period='1d', interval='1m')['Close']
+    def days(self, how_many: int = 1):
+        y = self.daterange(start=shift_date(now(), -how_many), end=now(), period='15m')
         return (y[0], y[-1])
     
-    def month(self, how_many: int = 1):
+    def months(self, how_many: int = 1):
         y = self.daterange(start=shift_date(now(), -how_many*30), end=now(), period='1d')
         return (y[0], y[-1])
     
