@@ -114,12 +114,13 @@ class getSymbol:
             y.index = unify_time_index(y.index)
             y = y.rename(symbol)
             
-            time.sleep(0.25)
+            # time.sleep(0.25)
             
             return round(y, 4)
     
     def now(self):
         y = self.ticker.history(period='1d', interval='1m')['Close']
+        assert len(y) > 0, f"Brak danych dla {self.symbol}."
         return y[-1]
         
     def days(self, how_many: int = 1):
@@ -137,9 +138,7 @@ class getSymbol:
         
         y.index = unify_time_index(y.index)
         y = round(y.rename(self.symbol), 4)
-        
-        time.sleep(0.5)
-        
+                
         return y
     
     

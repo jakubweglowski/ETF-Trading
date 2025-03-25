@@ -210,9 +210,8 @@ class DataCleaner:
         return {'bid': trueBid, 'ask': trueAsk}
     
     def getReturnRates(self, freq: str | int):
-        assert isinstance(freq, str) or isinstance(freq, int), "[BŁĄD] Argument 'freq' musi być typu 'str' albo 'int'."
-        if isinstance(freq, str): k = recalculate_frequency(freq)
-        else: k = freq
+        assert isinstance(freq, str), "[BŁĄD] Argument 'freq' musi być typu 'str'."
+        k = recalculate_frequency(freq)
         PLNPrices = self.getPLNPrices()
         bidPrice, askPrice = PLNPrices['bid'], PLNPrices['ask']
         returnRates = getReturnRates(bidPrice, askPrice, k)
