@@ -1,5 +1,6 @@
 from datetime import datetime as dt
 import pandas as pd
+import os
 from IPython.display import display
 
 from Functions.TechnicalFunctions import *
@@ -22,6 +23,8 @@ class PositionManipulator:
         self.statDict = LoadDict(filename_load, filepath_load)
         self.portfolio = self.statDict['SkładPortfela']
         self.symbols = self.portfolio.keys()
+        
+        self.filename_load = filename_load
         
     def Recalculate(self, K: float):
         print(f"Skład portfela przeliczony dla kwoty {K} PLN:")
@@ -52,6 +55,25 @@ class PositionManipulator:
         
         SaveDict(self.statDict, filename_save, 'Positions')
     
+    def ClosePosition(self):
+        
+        assert self.statDict['Rodzaj'] != 'Zamknięta pozycja', 'Pozycja została już zamknięta'
+        
+        self.statDict['Rodzaj'] = 'Zamknięta pozycja'
+        self.statDict['CzasZamknięciaPozycji'] = now(False)
+        
+        currencies = getCurrencies(info=self.info)
+        
+        close_prices = {}
+        for symbol in self.symbols:
+            close_prices[symbol] = getSymbol(symbol).now() + self.info[symbol]['SpreadAbs']
+            
+        self.statDict['KursySymboliZamknięcia'] = close_prices
+        self.statDict['KursyWalutoweZamknięcia'] = currencies
+        
+        SaveDict(self.statDict, self.filename_load, 'Closed positions')
+        os.remove(f'Positions/{self.filename_load}.pkl')
+        
     # Poniższą funkcję trzeba przepisać, żeby nie korzystała z API
     # tylko z jakiegoś zapisanego pliku zawierającego dane o obecnie otwartych pozycjach    
     def AnalyzePosition(self):
@@ -131,7 +153,7 @@ class OpenedPositionSummary:
         ReturnStats = generateReturnStats(K=K, 
                                           portfolioExpectedReturn=self.statDict['OczekiwanyZwrotPortfela'], 
                                           portfolioReturnCI=self.statDict["PrzedziałUfnościZwrotuPortfela"], 
-                                          levelCI=self.statDict["PoziomUfności"], 
+                                          levelCI=self.statDict['PoziomUfności'], 
                                           returns=MainSummary['Stopa zwrotu [%]'], 
                                           returnsPLN=MainSummary['Stopa zwrotu [PLN, %]'], 
                                           weights=MainSummary['Waga w portfelu [%]'])

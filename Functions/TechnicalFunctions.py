@@ -119,12 +119,12 @@ class getSymbol:
             return round(y, 4)
     
     def now(self):
-        y = self.ticker.history(period='1d', interval='1m')['Close']
+        y = self.daterange(start=shift_date(now(), -3), end=now(), period='15m')
         assert len(y) > 0, f"Brak danych dla {self.symbol}."
         return y[-1]
         
     def days(self, how_many: int = 1):
-        y = self.daterange(start=shift_date(now(), -how_many), end=now(), period='15m')
+        y = self.daterange(start=shift_date(now(), -how_many), end=now(), period='1h')
         return (y[0], y[-1])
     
     def months(self, how_many: int = 1):
@@ -204,7 +204,12 @@ def summary_from_dict(statDict: dict) -> str:
         pass
     
     try:
-        summary += f"Czas otwarcia pozycji: {statDict['CzasOtwarcia']}.\n"
+        summary += f"Czas otwarcia pozycji: {statDict['CzasOtwarciaPozycji']}.\n"
+    except KeyError:
+        pass
+    
+    try:
+        summary += f"Czas zamknięcia pozycji: {statDict['CzasZamknięciaPozycji']}.\n"
     except KeyError:
         pass
     
