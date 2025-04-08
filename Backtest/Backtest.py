@@ -55,23 +55,24 @@ class Backtest:
             
             # Okres testowy
             start_test, end_test = test[i]
+                
+            # Ładujemy całe dane na raz
+            dataloader = DataLoader()
+        
+            print(f"[INFO] Okres {i+1} z {len(train)}. Zaciągamy dane od {start_train} do {end_test}: {now(False)}")
+            data = dataloader.loadInstrumentsData(start_train, end_test)
+            info = dataloader.loadInstrumentsInfo()
+            
+            datacleaner = DataCleaner(data, info, verbose=False)
+            returnRates = datacleaner.getReturnRates(self.freq)
+            
+            # Trening
+            print(f"\t[INFO] Trening w okresie od {start_train} do {end_train}")
+
+            train_indices = returnRates.index.isin(pd.date_range(start_train, end_train))
             
             try:
                 
-                # Ładujemy całe dane na raz
-                dataloader = DataLoader()
-            
-                print(f"[INFO] Okres {i+1} z {len(train)}. Pobieramy dane od {start_train} do {end_test}: {now(False)}")
-                data = dataloader.loadInstrumentsData(start_train, end_test)
-                info = dataloader.loadInstrumentsInfo()
-                
-                datacleaner = DataCleaner(data, info, verbose=False)
-                returnRates = datacleaner.getReturnRates(self.freq)
-                
-                # Trening
-                print(f"\t[INFO] Trening w okresie od {start_train} do {end_train}")
-
-                train_indices = returnRates.index.isin(pd.date_range(start_train, end_train))
                 mo = MarkowitzOptimization(returnRates.loc[train_indices, :], self.freq, verbose=False)
                 mo.getOptimalWeights(model='max_sharpe', risk_method='oas')
                 pp = mo.getPortfolio()

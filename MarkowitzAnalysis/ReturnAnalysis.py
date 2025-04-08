@@ -69,10 +69,16 @@ class MarkowitzOptimization:
             ef.min_volatility()
             opt_return, opt_risk, opt_sharpe = ef.portfolio_performance()
             weights = ef.weights
-            portfolio = {key: round(val*100, 4) for key, val in ef.clean_weights().items() if 100*val > 1.0}
-            
-        assert np.isclose(np.sum(weights), 1.0), f"[BŁĄD] Suma wag w portfelu powinna wynosić 100%."
+            portfolio = {key: round(val*100, 4) for key, val in ef.clean_weights().items() if val > 0.005}
         
+        weights = np.array(list(portfolio.values()))
+        s = np.sum(weights)
+        if not np.isclose(s, 100.0, atol=5.0):
+            print(f"[Ostrzeżenie] Suma wag w portfelu powinna wynosić 100%, a wynosi {s:.2f}%.")
+
+        weights = 100*weights/s # normalizujemy wagi
+        portfolio = {key: round(weights[i], 2) for i, key in enumerate(portfolio.keys())}
+                
         self.portfolio = PortfolioPerformance(portfolio=portfolio, 
                                               returnRates=self.returnRates, 
                                               freq=self.freq, 

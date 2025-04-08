@@ -56,7 +56,7 @@ def recalculate_frequency(freq, full = False) -> int:
 
 def generate_start_end(end: str, freq: str, len_train: int = 2) -> tuple[str]:
     k = recalculate_frequency(freq, full = True)
-    shift = (k+1)*len_train
+    shift = (k+1)*len_train + 3
     start = shift_date(end, -shift)
     return (start, end)
     

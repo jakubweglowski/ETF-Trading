@@ -62,7 +62,7 @@ class DataCleaner:
                                          quantile_volatility,
                                          alpha_EMA)
         
-        self.data = self.data.dropna()
+        self.data = self.data.interpolate().dropna()
         
         assert set(self.data.columns) == set(self.spread_df.columns), f"[BŁĄD] Wystąpił nieoczekiwany błąd."
         assert all([x in list(self.data.columns) for x in currencies]), f"[BŁĄD] Brakuje danych o kursach walut."
@@ -92,7 +92,7 @@ class DataCleaner:
 
         
     def _remove_too_much_NA(self, multiplier: float = 1.30):
-        assert multiplier >= 1, f'[BŁĄD: {now(False)}] Mnożnik musi wynosić co najmniej 1.'
+        assert multiplier >= 1.0, f'[BŁĄD: {now(False)}] Mnożnik musi wynosić co najmniej 1.0'
         ndays = len(self.data.index)
         max_na = int(ndays * (1/6) * multiplier) + 1
         symbols = list(self.data.columns[self.data.isna().sum() <= max_na])

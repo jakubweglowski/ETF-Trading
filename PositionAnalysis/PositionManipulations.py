@@ -53,7 +53,7 @@ class PositionManipulator:
         self.statDict['Rodzaj'] = 'Otwarta pozycja'
         self.statDict['KwotaInwestycji'] = K
         
-        SaveDict(self.statDict, filename_save, 'Positions')
+        SaveDict(self.statDict, filename_save, 'Opened positions')
     
     def ClosePosition(self):
         
@@ -132,7 +132,7 @@ class OpenedPositionSummary:
             CurrentTrend[symbol] = {}
             
             y0, y1 = getSymbol(symbol).days()
-            CurrentTrend[symbol]['Zmiana dzienna [%]'] = (y1/y0 - 1)*100.
+            CurrentTrend[symbol][f'Zmiana dzienna [%]'] = (y1/y0 - 1)*100.
             
             y0, y1 = getSymbol(symbol).days(7)
             CurrentTrend[symbol]['Zmiana tygodniowa [%]'] = (y1/y0 - 1)*100.
